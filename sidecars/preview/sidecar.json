@@ -1,0 +1,24 @@
+{
+  "command": "node",
+  "args": [
+    "--max-old-space-size=128",
+    "main.mjs"
+  ],
+  "restart_policy": "always",
+  "display_name": "酒馆角色卡工作台",
+  "description": "拆包查看 SillyTavern PNG / JSON 角色卡，实时调试状态栏正则与 MVU 变量界面。",
+  "has_web_ui": true,
+  "agent_permissions": {
+    "allows_user_interactions": false
+  },
+  "ui_config": {
+    "display_name": "酒馆角色卡工作台",
+    "views": [
+      {
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE",
+        "title": "酒馆角色卡工作台"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "st-statusbar-preview-sidecar",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SillyTavern status bar regex and embedded UI live preview sidecar"
+}

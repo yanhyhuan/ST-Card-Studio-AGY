@@ -1,0 +1,3352 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>酒馆角色卡工作台</title>
+  <script src="/preload.js"></script>
+  <style>
+:root {
+  color-scheme: light dark;
+  --bg: #F6F4EF;
+  --panel: #FCFBF8;
+  --subtle: #EFECE5;
+  --code-bg: #181715;
+  --code-fg: #EAE5DC;
+  --line: rgba(36, 32, 26, 0.12);
+  --line-strong: rgba(36, 32, 26, 0.24);
+  --fg: #1F1D1A;
+  --fg-2: #666057;
+  --fg-3: #8F887D;
+  --accent: #9E3324;
+  --accent-hover: #83281B;
+  --accent-tint: rgba(158, 51, 36, 0.09);
+  --ok: #266B4C;
+  --warn-bg: #FAF2E1;
+  --warn-line: rgba(186, 128, 28, 0.42);
+  --warn-fg: #7D520A;
+  --err-bg: #FBEeed;
+  --err-line: rgba(190, 62, 56, 0.42);
+  --err-fg: #8F2420;
+  --font-sans: "Google Sans Flex", "Sarasa UI SC", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-mono: "Anthropic Mono", "Sarasa Mono Slab SC", "Cascadia Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #181715;
+    --panel: #201F1C;
+    --subtle: #282622;
+    --code-bg: #121110;
+    --code-fg: #EDE9E0;
+    --line: rgba(255, 248, 236, 0.10);
+    --line-strong: rgba(255, 248, 236, 0.22);
+    --fg: #EFECE4;
+    --fg-2: #A69F94;
+    --fg-3: #767067;
+    --accent: #D97757;
+    --accent-hover: #E3886A;
+    --accent-tint: rgba(217, 119, 87, 0.15);
+    --ok: #63B88D;
+    --warn-bg: rgba(217, 158, 54, 0.12);
+    --warn-line: rgba(217, 158, 54, 0.36);
+    --warn-fg: #EEC97D;
+    --err-bg: rgba(214, 82, 76, 0.14);
+    --err-line: rgba(214, 82, 76, 0.38);
+    --err-fg: #F4A29E;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
+button, select, input, textarea {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--fg);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Flat Workbench Layout */
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 9px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 680;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.mode-switch {
+  display: inline-flex;
+  background: var(--subtle);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-btn {
+  border: 0;
+  background: transparent;
+  padding: 3px 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--fg-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mode-btn:hover {
+  color: var(--fg);
+}
+
+.mode-btn.active {
+  background: var(--panel);
+  color: var(--fg);
+  font-weight: 650;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.mini-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-2);
+}
+
+.top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.select-clean {
+  appearance: none;
+  height: 27px;
+  padding: 0 24px 0 8px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background-color: var(--panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1.5 1.5L5 4.8L8.5 1.5' stroke='%23888279' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  cursor: pointer;
+  max-width: 170px;
+}
+
+.select-clean:hover {
+  border-color: var(--line-strong);
+}
+
+.btn {
+  height: 27px;
+  padding: 0 9px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  border-color: var(--line-strong);
+  background: var(--subtle);
+}
+
+.btn.sm {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11.5px;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFDF9;
+}
+
+.btn.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.sync-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.sync-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fg-3);
+}
+
+.sync-toggle[aria-pressed="true"] .sync-dot {
+  background: var(--accent);
+}
+
+/* Mode Panels */
+.mode-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Stage Area */
+.stage-section {
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.stage-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--subtle);
+}
+
+.toolbar-left, .stage-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.match-status {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--fg-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.match-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-3);
+}
+
+.match-status[data-tone="ok"] { color: var(--ok); }
+.match-status[data-tone="ok"]::before { background: var(--ok); }
+.match-status[data-tone="warn"] { color: var(--warn-fg); }
+.match-status[data-tone="warn"]::before { background: #D99E36; }
+.match-status[data-tone="err"] { color: var(--err-fg); }
+.match-status[data-tone="err"]::before { background: #D6524C; }
+
+.seg-group {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 5px;
+  padding: 1px;
+}
+
+.seg-btn {
+  border: 0;
+  background: transparent;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--fg-2);
+  font-size: 11.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seg-btn:hover {
+  color: var(--fg);
+}
+
+.seg-btn.active {
+  background: var(--subtle);
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.audit-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  border: 1px solid var(--warn-line);
+}
+
+.alert-banner {
+  padding: 7px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+.alert-banner[data-level="error"] {
+  background: var(--err-bg);
+  border-bottom-color: var(--err-line);
+  color: var(--err-fg);
+}
+
+.stage-canvas-wrap {
+  padding: 14px;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.stage-canvas-wrap[data-canvas-theme="dark"] {
+  background: #141311;
+}
+
+.stage-canvas-wrap[data-canvas-theme="light"] {
+  background: #EFECE4;
+}
+
+.viewport-box {
+  width: 100%;
+  min-width: 0;
+  transition: width 0.16s ease;
+}
+
+.viewport-box[data-vp="mobile"] {
+  width: 360px;
+  max-width: 100%;
+  border-left: 1px dashed rgba(160, 150, 136, 0.35);
+  border-right: 1px dashed rgba(160, 150, 136, 0.35);
+  padding: 0 6px;
+}
+
+.viewport-box[data-vp="desktop"] {
+  width: 660px;
+  flex-shrink: 0;
+}
+
+.surrounding-prose {
+  padding: 8px 11px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: rgba(255, 255, 255, 0.05);
+  color: #E4DFD5;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stage-canvas-wrap[data-canvas-theme="light"] .surrounding-prose {
+  background: #FCFBF8;
+  color: #22201D;
+  border-color: rgba(36, 32, 26, 0.12);
+}
+
+#prose-after {
+  margin-bottom: 0;
+  margin-top: 8px;
+}
+
+.preview-frame {
+  display: block;
+  width: 100%;
+  min-height: 130px;
+  height: 220px;
+  max-height: 540px;
+  border: 0;
+  background: transparent;
+}
+
+.code-view, .audit-view {
+  padding: 12px 14px;
+}
+
+.code-toolbar, .pane-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.muted-note {
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+.mono-pre {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 300px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.audit-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audit-item {
+  padding: 7px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.audit-item[data-severity="warn"] {
+  background: var(--warn-bg);
+  border-color: var(--warn-line);
+  color: var(--warn-fg);
+}
+
+.audit-item[data-severity="error"] {
+  background: var(--err-bg);
+  border-color: var(--err-line);
+  color: var(--err-fg);
+}
+
+.audit-item[data-severity="ok"] {
+  color: var(--ok);
+  background: var(--subtle);
+}
+
+.boundary-note {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+.console-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-top: 1px solid var(--line);
+  background: var(--subtle);
+  font-size: 11.5px;
+}
+
+.console-label {
+  color: var(--fg-2);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.console-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+.text-link {
+  border: 0;
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+  padding: 0 4px;
+  text-decoration: underline;
+}
+
+/* Workbench Section */
+.workbench-section {
+  flex: 1;
+  background: var(--bg);
+}
+
+.wb-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  padding: 0 10px;
+  gap: 4px;
+}
+
+.wb-tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 8px 10px 7px;
+  cursor: pointer;
+  color: var(--fg-2);
+  font-weight: 550;
+  font-size: 12px;
+}
+
+.wb-tab:hover {
+  color: var(--fg);
+}
+
+.wb-tab.active {
+  color: var(--fg);
+  font-weight: 650;
+  border-bottom-color: var(--accent);
+}
+
+.tab-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+  margin-left: 3px;
+}
+
+.wb-pane {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.multi-rule-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.field-inline, .check-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.row-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 8px;
+}
+
+#regex-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 11.5px;
+  color: var(--fg-2);
+  font-weight: 550;
+}
+
+.chip-bar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mini-chip {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg-2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.mini-chip:hover {
+  border-color: var(--line-strong);
+  color: var(--fg);
+}
+
+.full-input {
+  width: 100%;
+  height: 30px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 0 9px;
+}
+
+.full-input:hover {
+  border-color: var(--line-strong);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.code-area {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 9px 11px;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.meta-drawer {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.meta-drawer summary {
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--fg-2);
+  user-select: none;
+}
+
+.meta-drawer-body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 4px 0;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--subtle);
+}
+
+/* ================= SCREEN 2: CARD DISASSEMBLY ================= */
+.xray-dropbar {
+  margin: 12px 14px 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.xray-dropbar:hover,
+.xray-dropbar.dragover {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
+.drop-main {
+  font-size: 12.5px;
+  font-weight: 550;
+}
+
+.drop-sub {
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+.xray-result {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-sheet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.card-avatar-wrap {
+  width: 54px;
+  height: 72px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: var(--subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.card-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-avatar-fallback {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fg-3);
+}
+
+.card-meta-main {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.card-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 680;
+}
+
+.card-spec-text {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+.card-submeta {
+  font-size: 11.5px;
+  color: var(--fg-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.card-tags-row {
+  font-size: 11.5px;
+  color: var(--fg-3);
+}
+
+.budget-strip {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.budget-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--fg-2);
+}
+
+.budget-total {
+  font-family: var(--font-mono);
+  color: var(--fg);
+}
+
+.budget-bar {
+  display: flex;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--line);
+  gap: 1px;
+}
+
+.budget-seg {
+  height: 100%;
+  min-width: 2px;
+}
+
+.budget-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 11px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+}
+
+/* Flat Divided List for Disassembled Items */
+.flat-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+
+.flat-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.flat-row:first-child {
+  border-top: 0;
+}
+
+.flat-list {
+  border-top: 0;
+}
+
+.row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.row-title {
+  font-weight: 600;
+  font-size: 12.5px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.plain-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0 5px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  color: var(--fg-2);
+  background: var(--panel);
+}
+
+.plain-tag.warn {
+  border-color: var(--warn-line);
+  color: var(--warn-fg);
+  background: var(--warn-bg);
+}
+
+.row-meta {
+  font-size: 11.5px;
+  color: var(--fg-2);
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.x-details summary {
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--fg-2);
+  user-select: none;
+}
+
+.x-details summary:hover {
+  color: var(--fg);
+}
+
+.x-pre {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  max-height: 220px;
+  overflow: auto;
+  border-radius: 5px;
+  background: var(--code-bg);
+  color: var(--code-fg);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.empty-hint {
+  padding: 18px 0;
+  color: var(--fg-2);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand-row">
+        <h1 class="app-title">酒馆角色卡工作台</h1>
+        <div class="mode-switch" role="tablist" aria-label="功能切换">
+          <button type="button" role="tab" id="topmode-studio" class="mode-btn active" data-top-mode="studio" aria-selected="true">状态栏调试</button>
+          <button type="button" role="tab" id="topmode-xray" class="mode-btn" data-top-mode="xray" aria-selected="false">
+            角色卡拆包 <span id="xray-count-pill" class="mini-count hidden"></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="studio-top-actions" class="top-actions">
+        <label class="sr-only" for="preset-select">载入示例</label>
+        <select id="preset-select" class="select-clean" title="载入内置示例">
+          <option value="">示例…</option>
+          <option value="css-card">纯 CSS 状态栏</option>
+          <option value="mvu-hud">MVU 变量面板 (iframe)</option>
+          <option value="purify-trap">普通楼层清洗预警</option>
+        </select>
+        <button id="import-btn" type="button" class="btn" title="导入正则 JSON 文件">导入正则</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
+        <button id="sync-btn" type="button" class="btn sync-toggle" aria-pressed="true" title="自动同步左侧对话写入的草稿">
+          <span class="sync-dot" aria-hidden="true"></span>对话同步
+        </button>
+      </div>
+
+      <div id="xray-top-actions" class="top-actions hidden">
+        <button id="xray-demo-btn" type="button" class="btn">试看示例卡</button>
+        <button id="xray-pick-btn" type="button" class="btn primary">打开 PNG / JSON</button>
+        <input id="xray-file-input" type="file" accept=".png,.json,image/png,application/json" hidden>
+      </div>
+    </header>
+
+    <!-- ================= SCREEN 1: STATUSBAR STUDIO ================= -->
+    <div id="panel-studio" class="mode-panel">
+      <section class="stage-section" aria-label="预览画布">
+        <div class="stage-toolbar">
+          <div class="toolbar-left">
+            <div class="seg-group" role="tablist" aria-label="输出视图">
+              <button type="button" role="tab" class="seg-btn active" data-stage-view="render" aria-selected="true">预览</button>
+              <button type="button" role="tab" class="seg-btn" data-stage-view="html" aria-selected="false">HTML</button>
+              <button type="button" role="tab" class="seg-btn" data-stage-view="audit" aria-selected="false">
+                预检 <span id="audit-badge" class="audit-badge hidden">0</span>
+              </button>
+            </div>
+            <span id="match-pill" class="match-status" role="status" aria-live="polite">就绪</span>
+          </div>
+
+          <div class="stage-controls">
+            <div class="seg-group" role="group" aria-label="预览宽度">
+              <button type="button" class="seg-btn active" data-viewport="fluid">铺满</button>
+              <button type="button" class="seg-btn" data-viewport="mobile">360px</button>
+              <button type="button" class="seg-btn" data-viewport="desktop">660px</button>
+            </div>
+            <button id="bg-toggle" type="button" class="btn sm">深色底</button>
+            <button id="rerender-btn" type="button" class="btn sm">刷新</button>
+          </div>
+        </div>
+
+        <div id="alert-banner" class="alert-banner hidden" role="status" aria-live="polite"></div>
+
+        <div id="view-render" class="stage-canvas-wrap" data-canvas-theme="dark">
+          <div id="viewport-box" class="viewport-box" data-vp="fluid">
+            <div id="prose-before" class="surrounding-prose hidden"></div>
+            <iframe
+              id="preview-frame"
+              class="preview-frame"
+              sandbox="allow-scripts"
+              title="状态栏渲染沙盒"
+            ></iframe>
+            <div id="prose-after" class="surrounding-prose hidden"></div>
+          </div>
+        </div>
+
+        <div id="view-html" class="code-view hidden">
+          <div class="code-toolbar">
+            <span id="output-meta" class="muted-note"></span>
+            <button id="copy-html-btn" type="button" class="btn sm">复制 HTML</button>
+          </div>
+          <pre id="html-output" class="mono-pre"></pre>
+        </div>
+
+        <div id="view-audit" class="audit-view hidden">
+          <ul id="audit-list" class="audit-list"></ul>
+          <p class="boundary-note">
+            注：此处仅模拟正则替换与常用 TavernHelper / MVU 变量读写，不展开 <code>{{user}}</code> 等酒馆宏，发卡前请以 SillyTavern 实机导入为准。
+          </p>
+        </div>
+
+        <div id="console-strip" class="console-strip hidden" aria-live="polite">
+          <span class="console-label">日志</span>
+          <span id="console-text" class="console-text"></span>
+          <button id="clear-console-btn" type="button" class="text-link">清除</button>
+        </div>
+      </section>
+
+      <section class="workbench-section" aria-label="编辑区">
+        <nav class="wb-tabs" role="tablist" aria-label="编辑项">
+          <button type="button" role="tab" class="wb-tab active" data-wb-tab="rule" aria-selected="true">正则</button>
+          <button type="button" role="tab" class="wb-tab" data-wb-tab="sample" aria-selected="false">测试文本</button>
+          <button type="button" role="tab" class="wb-tab" data-wb-tab="vars" aria-selected="false">模拟变量</button>
+          <button type="button" role="tab" class="wb-tab" data-wb-tab="export" aria-selected="false">导入导出</button>
+        </nav>
+
+        <div id="wb-rule" class="wb-pane">
+          <div id="multi-rule-bar" class="multi-rule-bar hidden">
+            <label class="field-inline" for="rule-index-select">
+              <span>规则</span>
+              <select id="rule-index-select" class="select-clean"></select>
+            </label>
+            <label class="check-inline">
+              <input id="chain-all-toggle" type="checkbox">
+              <span>按顺序执行全部启用项</span>
+            </label>
+          </div>
+
+          <div id="regex-fields">
+            <div class="field">
+              <label for="find-regex">查找表达式 <code>findRegex</code></label>
+              <input id="find-regex" type="text" class="full-input mono" spellcheck="false" placeholder="/<status>([\s\S]*?)<\/status>/gi">
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <label id="replace-label" for="replace-string">替换内容 <code>replaceString</code></label>
+              <div class="chip-bar">
+                <button type="button" class="mini-chip" data-insert="$1">$1</button>
+                <button type="button" class="mini-chip" data-insert="{{match}}">{{match}}</button>
+                <button type="button" class="mini-chip" data-wrap-fence="1">套入 html 代码块</button>
+              </div>
+            </div>
+            <textarea id="replace-string" class="code-area" rows="9" spellcheck="false" placeholder="HTML / CSS 或 ```html 代码块"></textarea>
+          </div>
+
+          <details class="meta-drawer">
+            <summary>更多设置</summary>
+            <div class="meta-drawer-body">
+              <div class="row-split">
+                <div class="field">
+                  <label for="input-mode">模式</label>
+                  <select id="input-mode" class="full-input">
+                    <option value="regex">正则替换</option>
+                    <option value="direct-html">直接渲染 HTML</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="host-surface">挂载环境</label>
+                  <select id="host-surface" class="full-input">
+                    <option value="auto">自动判断</option>
+                    <option value="message">普通楼层（检查 DOMPurify）</option>
+                    <option value="iframe">酒馆助手 iframe</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row-split">
+                <div class="field">
+                  <label for="script-name">规则名</label>
+                  <input id="script-name" type="text" class="full-input">
+                </div>
+                <div class="field">
+                  <label for="trim-strings">剔除词 <code>trimStrings</code>（逗号分隔）</label>
+                  <input id="trim-strings" type="text" class="full-input mono">
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div id="wb-sample" class="wb-pane hidden">
+          <div class="field">
+            <label for="sample-input">用于测试正则匹配的楼层原文</label>
+            <textarea id="sample-input" class="code-area" rows="10" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div id="wb-vars" class="wb-pane hidden">
+          <div class="pane-head-actions">
+            <span id="vars-status" class="muted-note">JSON 正常</span>
+            <button id="emit-mvu-btn" type="button" class="btn primary sm">触发变量更新事件</button>
+          </div>
+          <div class="field">
+            <label for="mock-vars">供 <code>getVariables()</code> 与 <code>Mvu.getMvuData()</code> 读取的 JSON</label>
+            <textarea id="mock-vars" class="code-area" rows="10" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div id="wb-export" class="wb-pane hidden">
+          <div class="field">
+            <label for="paste-json-area">粘贴正则 JSON（兼容角色卡与酒馆助手格式）</label>
+            <textarea id="paste-json-area" class="code-area" rows="5" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button id="parse-json-btn" type="button" class="btn primary sm">载入 JSON</button>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <div class="btn-row">
+            <button id="export-card-btn" type="button" class="btn">导出角色卡正则 (.json)</button>
+            <button id="export-th-btn" type="button" class="btn">导出酒馆助手正则 (.json)</button>
+            <button id="copy-card-json-btn" type="button" class="btn">复制 JSON</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= SCREEN 2: CARD DISASSEMBLY ================= -->
+    <div id="panel-xray" class="mode-panel hidden">
+      <div id="xray-dropzone" class="xray-dropbar" tabindex="0" role="button" aria-label="拖入或选择 PNG 或 JSON 角色卡">
+        <span class="drop-main">拖入 <code>.png</code> / <code>.json</code> 角色卡，或点击选择文件</span>
+        <span class="drop-sub">本地只读解析 <code>ccv3</code> / <code>chara</code></span>
+      </div>
+
+      <div id="xray-error" class="alert-banner hidden" data-level="error" role="alert"></div>
+
+      <section id="xray-result" class="xray-result hidden" aria-label="角色卡内容">
+        <div class="card-sheet">
+          <div id="card-avatar-wrap" class="card-avatar-wrap">
+            <img id="card-avatar-img" class="card-avatar-img hidden" alt="封面">
+            <span id="card-avatar-fallback" class="card-avatar-fallback">JSON</span>
+          </div>
+          <div class="card-meta-main">
+            <div class="card-title-row">
+              <h2 id="card-name" class="card-name"></h2>
+              <span id="card-spec-badge" class="card-spec-text"></span>
+            </div>
+            <div id="card-submeta" class="card-submeta"></div>
+            <div id="card-tags-row" class="card-tags-row"></div>
+          </div>
+          <div class="card-hero-actions">
+            <button id="export-raw-card-btn" type="button" class="btn sm">导出 JSON</button>
+          </div>
+        </div>
+
+        <div class="budget-strip">
+          <div class="budget-head">
+            <span>字数与词元估算</span>
+            <strong id="budget-total" class="budget-total"></strong>
+          </div>
+          <div id="budget-bar" class="budget-bar" aria-hidden="true"></div>
+          <div id="budget-legend" class="budget-legend"></div>
+        </div>
+
+        <div class="workbench-section">
+          <nav class="wb-tabs" role="tablist" aria-label="角色卡条目">
+            <button type="button" role="tab" class="wb-tab active" data-xray-tab="regex" aria-selected="true">
+              正则 <span id="xcount-regex" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="greetings" aria-selected="false">
+              开场白 <span id="xcount-greet" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="worldbook" aria-selected="false">
+              世界书 <span id="xcount-wb" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="scripts" aria-selected="false">
+              脚本与检查 <span id="xcount-scripts" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="persona" aria-selected="false">
+              人设字段
+            </button>
+          </nav>
+
+          <div id="xpane-regex" class="wb-pane">
+            <div id="xray-regex-toolbar" class="pane-head-actions hidden">
+              <span></span>
+              <button id="send-all-regex-btn" type="button" class="btn sm">全部载入调试台</button>
+            </div>
+            <div id="xray-regex-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-greetings" class="wb-pane hidden">
+            <div id="xray-greet-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-worldbook" class="wb-pane hidden">
+            <input id="wb-search-input" type="search" class="full-input" placeholder="按条目名、触发词或正文筛选…">
+            <div id="xray-wb-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-scripts" class="wb-pane hidden">
+            <div id="xray-sec-summary" class="flat-list"></div>
+            <div id="xray-scripts-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-persona" class="wb-pane hidden">
+            <div id="xray-persona-list" class="flat-list"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script>
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'st_card_workbench_state_v3';
+  const POLL_MS = 1800;
+  const $ = (id) => document.getElementById(id);
+
+  const PRESETS = {
+    'css-card': {
+      mode: 'regex',
+      hostSurface: 'auto',
+      canvasTheme: 'dark',
+      scriptName: '行旅账册状态栏',
+      findRegex: '/<status>\\s*([^|]+?)\\s*\\|\\s*([^|]+?)\\s*\\|\\s*([^|]+?)\\s*\\|\\s*([^|]+?)\\s*\\|\\s*([\\s\\S]*?)<\\/status>/gi',
+      trimStrings: '',
+      replaceString: `<div class="st-sheet">
+  <style>
+    .st-sheet {
+      margin-top: 12px;
+      padding: 11px 13px;
+      background: #1B1A17;
+      color: #EAE5DC;
+      border: 1px solid rgba(234, 229, 220, 0.14);
+      border-radius: 6px;
+      font-family: "Sarasa UI SC", "Microsoft YaHei", sans-serif;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .st-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 6px;
+      padding-bottom: 8px;
+      margin-bottom: 9px;
+      border-bottom: 1px solid rgba(234, 229, 220, 0.10);
+      color: #B8B0A2;
+      font-size: 12px;
+    }
+    .st-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px 14px;
+    }
+    .st-item span {
+      display: block;
+      font-size: 11px;
+      color: #8E877B;
+    }
+    .st-item strong {
+      font-weight: 600;
+      color: #F0ECE3;
+    }
+    .st-fold {
+      margin-top: 9px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(234, 229, 220, 0.08);
+    }
+    .st-fold summary {
+      cursor: pointer;
+      color: #C9B296;
+      font-size: 12px;
+      user-select: none;
+    }
+    .st-fold p {
+      margin: 5px 0 0;
+      color: #C2BBB0;
+      font-size: 12px;
+    }
+  </style>
+  <div class="st-head">
+    <span>$1</span>
+    <span>$2</span>
+  </div>
+  <div class="st-grid">
+    <div class="st-item"><span>盘缠</span><strong>$3</strong></div>
+    <div class="st-item"><span>身体状况</span><strong>$4</strong></div>
+  </div>
+  <details class="st-fold" open>
+    <summary>随身物件</summary>
+    <p>$5</p>
+  </details>
+</div>`,
+      sampleInput: `渡口的茶棚刚收了幌子，掌柜把两碟盐水花生搁在靠窗的木桌上，顺手掩上半扇挡风板：“北边昨夜下了早霜，船家天亮才拔锚，客官先喝碗热茶暖暖手。”\n\n<status>十月廿三 酉正 | 临淮渡·老柳茶棚 | 碎银三两、铜钱四十文 | 左肩旧伤未愈 | 渡船凭引、油纸包的干粮</status>`,
+      mockVars: JSON.stringify({ stat_data: { silver: 3, cash: 40, location: '临淮渡·老柳茶棚' } }, null, 2),
+    },
+
+    'mvu-hud': {
+      mode: 'regex',
+      hostSurface: 'auto',
+      canvasTheme: 'dark',
+      scriptName: '调查卷宗面板（MVU iframe）',
+      findRegex: '/<hud_mount\\s*\\/?>/gi',
+      trimStrings: '',
+      replaceString: `\`\`\`html
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Sarasa UI SC", system-ui, sans-serif;
+    background: #1A1B1E;
+    color: #E6E8EC;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    padding: 12px 13px;
+    font-size: 12.5px;
+  }
+  .top { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 8px; margin-bottom: 9px; border-bottom: 1px solid rgba(255,255,255,0.09); }
+  .place { font-weight: 600; }
+  .fund { font-family: monospace; font-size: 12px; color: #C8B48A; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 9px; }
+  .tab {
+    border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #9CA2AE;
+    padding: 3px 9px; border-radius: 4px; cursor: pointer; font-size: 11.5px;
+  }
+  .tab.active { background: rgba(255,255,255,0.08); color: #F0F2F5; border-color: rgba(255,255,255,0.24); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .cell { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 5px; padding: 7px 9px; }
+  .label { font-size: 11px; color: #8E95A2; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+  .fill { height: 100%; background: #7FA88E; transition: width 0.2s ease; }
+  .notes { font-size: 12px; color: #C5CAD3; line-height: 1.6; }
+  .act {
+    margin-top: 9px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04);
+    color: #DCE0E8; border-radius: 4px; padding: 4px 9px; font-size: 11.5px; cursor: pointer;
+  }
+  .act:hover { border-color: rgba(255,255,255,0.28); }
+</style>
+</head>
+<body>
+  <div class="top">
+    <span class="place" id="loc">-</span>
+    <span class="fund" id="fund">-</span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-t="overview">进度</button>
+    <button class="tab" data-t="notes">待查线索</button>
+  </div>
+  <div id="pane-overview" class="grid">
+    <div class="cell">
+      <div class="label"><span>查证进度</span><strong id="prog-val">0%</strong></div>
+      <div class="bar"><div class="fill" id="prog-bar" style="width:0%"></div></div>
+    </div>
+    <div class="cell">
+      <div class="label"><span>证人配合度</span><strong id="trust-val">0</strong></div>
+      <div class="bar"><div class="fill" id="trust-bar" style="width:0%;background:#B88B6C"></div></div>
+    </div>
+  </div>
+  <div id="pane-notes" class="notes" style="display:none"></div>
+  <button class="act" id="expense-btn" type="button">记一笔车马费 (-20 经费)</button>
+
+  <script>
+    let activeTab = 'overview';
+    function render() {
+      const vars = getVariables({ type: 'chat' }) || {};
+      const s = vars.stat_data || {};
+      document.getElementById('loc').textContent = s.location || '未记录地点';
+      document.getElementById('fund').textContent = '经费 ' + (s.budget ?? 0);
+      const prog = Math.max(0, Math.min(100, Number(s.progress) || 0));
+      const trust = Math.max(0, Math.min(100, Number(s.trust) || 0));
+      document.getElementById('prog-val').textContent = prog + '%';
+      document.getElementById('prog-bar').style.width = prog + '%';
+      document.getElementById('trust-val').textContent = trust + '%';
+      document.getElementById('trust-bar').style.width = trust + '%';
+      const list = Array.isArray(s.clues) ? s.clues : ['暂无记录'];
+      const box = document.getElementById('pane-notes');
+      box.textContent = '';
+      list.forEach(item => {
+        const div = document.createElement('div');
+        div.textContent = '· ' + item;
+        box.appendChild(div);
+      });
+    }
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeTab = btn.dataset.t;
+        document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+        document.getElementById('pane-overview').style.display = activeTab === 'overview' ? 'grid' : 'none';
+        document.getElementById('pane-notes').style.display = activeTab === 'notes' ? 'block' : 'none';
+      });
+    });
+    document.getElementById('expense-btn').addEventListener('click', () => {
+      const vars = getVariables({ type: 'chat' }) || {};
+      const s = Object.assign({}, vars.stat_data || {});
+      s.budget = Math.max(0, (Number(s.budget) || 0) - 20);
+      insertOrAssignVariables({ stat_data: s }, { type: 'chat' });
+      render();
+    });
+    waitGlobalInitialized('Mvu').then(() => {
+      eventOn(Mvu.events.VARIABLE_UPDATE_ENDED, render);
+      render();
+    });
+  <\/script>
+</body>
+</html>
+\`\`\``,
+      sampleInput: `档案室的值班员把登记簿推过来，指了指倒数第三行被墨水涂改过的入库日期。\n<hud_mount/>`,
+      mockVars: JSON.stringify({
+        stat_data: {
+          location: '旧市政厅·三楼档案室',
+          budget: 340,
+          progress: 60,
+          trust: 45,
+          clues: [
+            '核对十月十四日的货运签收单',
+            '向门卫确认当晚借钥匙的人名',
+          ],
+        },
+      }, null, 2),
+    },
+
+    'purify-trap': {
+      mode: 'regex',
+      hostSurface: 'message',
+      canvasTheme: 'dark',
+      scriptName: '普通楼层清洗预警示例',
+      findRegex: '/\\[木匣:(.*?)\\]/g',
+      trimStrings: '',
+      replaceString: `<div style="margin-top:8px;padding:10px 12px;background:#22201D;color:#EAE5DC;border-radius:6px;border:1px solid rgba(255,255,255,0.14)">
+  <div style="margin-bottom:6px">抽屉底层放着一只上了锁的木匣。</div>
+  <button onclick="alert('$1')" style="padding:4px 9px;border-radius:4px;border:1px solid #5A534A;background:#2E2B27;color:#EAE5DC;cursor:pointer">查看匣内物件（onclick 在酒馆普通楼层会被过滤）</button>
+</div>`,
+      sampleInput: `拉开书桌右侧最下面的抽屉，木板后面露出半截铜锁。\n[木匣:旧印章、两张当票]`,
+      mockVars: JSON.stringify({ stat_data: {} }, null, 2),
+    },
+  };
+
+  const state = {
+    mode: 'regex',
+    hostSurface: 'auto',
+    viewport: 'fluid',
+    canvasTheme: 'dark',
+    stageView: 'render',
+    wbTab: 'rule',
+    liveSync: true,
+    lastDraftTs: 0,
+    rulesList: [],
+    activeRuleIdx: 0,
+    chainAll: false,
+    scriptName: '',
+    findRegex: '',
+    trimStrings: '',
+    replaceString: '',
+    sampleInput: '',
+    mockVars: '',
+    renderToken: '',
+  };
+
+  function resolveApiUrl(subpath) {
+    const clean = subpath.replace(/^\//, '');
+    if (location.protocol === 'sidecar:') {
+      const u = new URL(location.href);
+      u.pathname = u.pathname.replace(/\/?$/, '/') + clean;
+      u.search = '';
+      return u.toString();
+    }
+    return '/' + clean;
+  }
+
+  function sidecarFetch(subpath, init) {
+    if (location.protocol === 'file:') return Promise.reject(new Error('offline file'));
+    const url = resolveApiUrl(subpath);
+    const fn = window.sidecar?.fetch ? window.sidecar.fetch.bind(window.sidecar) : fetch;
+    return fn(url, init);
+  }
+
+  function loadInitialState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (saved && typeof saved === 'object' && saved.replaceString) {
+        Object.assign(state, saved);
+        return;
+      }
+    } catch {}
+    applyPresetObject(PRESETS['css-card'], false);
+  }
+
+  function persistState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        mode: state.mode,
+        hostSurface: state.hostSurface,
+        viewport: state.viewport,
+        canvasTheme: state.canvasTheme,
+        liveSync: state.liveSync,
+        lastDraftTs: state.lastDraftTs,
+        scriptName: state.scriptName,
+        findRegex: state.findRegex,
+        trimStrings: state.trimStrings,
+        replaceString: state.replaceString,
+        sampleInput: state.sampleInput,
+        mockVars: state.mockVars,
+      }));
+    } catch {}
+  }
+
+  function applyPresetObject(p, renderNow = true) {
+    state.mode = p.mode || 'regex';
+    state.hostSurface = p.hostSurface || 'auto';
+    if (p.canvasTheme) state.canvasTheme = p.canvasTheme;
+    state.scriptName = p.scriptName || '';
+    state.findRegex = p.findRegex || '';
+    state.trimStrings = Array.isArray(p.trimStrings) ? p.trimStrings.join(', ') : (p.trimStrings || '');
+    state.replaceString = p.replaceString || '';
+    state.sampleInput = p.sampleInput ?? state.sampleInput;
+    if (p.mockVars) {
+      state.mockVars = typeof p.mockVars === 'string' ? p.mockVars : JSON.stringify(p.mockVars, null, 2);
+    }
+    syncInputsFromState();
+    if (renderNow) evaluateAndRender();
+  }
+
+  function syncInputsFromState() {
+    $('input-mode').value = state.mode;
+    $('host-surface').value = state.hostSurface;
+    $('script-name').value = state.scriptName;
+    $('find-regex').value = state.findRegex;
+    $('trim-strings').value = state.trimStrings;
+    $('replace-string').value = state.replaceString;
+    $('sample-input').value = state.sampleInput;
+    $('mock-vars').value = state.mockVars;
+    $('regex-fields').classList.toggle('hidden', state.mode === 'direct-html');
+    $('replace-label').innerHTML = state.mode === 'direct-html'
+      ? 'HTML 源码'
+      : '替换内容 <code>replaceString</code>';
+    $('view-render').dataset.canvasTheme = state.canvasTheme;
+    $('bg-toggle').textContent = state.canvasTheme === 'dark' ? '深色底' : '浅色底';
+    $('viewport-box').dataset.vp = state.viewport;
+    $('sync-btn').setAttribute('aria-pressed', String(state.liveSync));
+  }
+
+  function parseRegexPattern(rawPattern) {
+    const str = String(rawPattern ?? '');
+    if (!str) return { error: '查找表达式为空' };
+    const slashMatch = /^\/([\s\S]*)\/([a-z]*)$/.exec(str);
+    if (slashMatch) {
+      const [, body, flags] = slashMatch;
+      try {
+        const seen = new Set();
+        for (const ch of flags) {
+          if (seen.has(ch)) return { error: `正则标志重复：${ch}` };
+          seen.add(ch);
+        }
+        return { regex: new RegExp(body, flags) };
+      } catch (e) {
+        return { error: `正则语法错误：${e.message}` };
+      }
+    }
+    try {
+      return { regex: new RegExp(str, 'gm') };
+    } catch (e) {
+      return { error: `正则语法错误：${e.message}` };
+    }
+  }
+
+  function parseTrimList(raw) {
+    if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+    return String(raw || '')
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  function applySingleRule(input, rule) {
+    const parsed = parseRegexPattern(rule.findRegex);
+    if (parsed.error) return { output: input, matchCount: 0, groupCount: 0, error: parsed.error };
+
+    const trims = parseTrimList(rule.trimStrings);
+    const applyTrims = (val) => {
+      let res = String(val ?? '');
+      for (const t of trims) {
+        if (t) res = res.split(t).join('');
+      }
+      return res;
+    };
+
+    let matchCount = 0;
+    let groupCount = 0;
+    const template = String(rule.replaceString ?? '');
+
+    const output = String(input ?? '').replace(parsed.regex, (...args) => {
+      matchCount += 1;
+      const hasNamed = typeof args[args.length - 1] === 'object' && args[args.length - 1] !== null;
+      const namedGroups = hasNamed ? args[args.length - 1] : null;
+      const fullMatch = args[0];
+      const captureEnd = hasNamed ? args.length - 3 : args.length - 2;
+      const captures = args.slice(1, captureEnd).map(applyTrims);
+      groupCount = Math.max(groupCount, captures.length);
+
+      let rep = template.replace(/\{\{match\}\}/gi, () => applyTrims(fullMatch));
+      rep = rep.replace(/\$\$|\$&|\$(\d{1,2})|\$<([^>]+)>/g, (tok, num, groupName) => {
+        if (tok === '$$') return '$';
+        if (tok === '$&') return applyTrims(fullMatch);
+        if (groupName !== undefined) {
+          return namedGroups && Object.hasOwn(namedGroups, groupName)
+            ? applyTrims(namedGroups[groupName])
+            : '';
+        }
+        if (num.length === 2) {
+          const idx2 = Number(num);
+          if (idx2 >= 1 && idx2 <= captures.length) return captures[idx2 - 1] ?? '';
+          const idx1 = Number(num[0]);
+          if (idx1 >= 1 && idx1 <= captures.length) return (captures[idx1 - 1] ?? '') + num[1];
+          return tok;
+        }
+        const idx = Number(num);
+        if (idx >= 1 && idx <= captures.length) return captures[idx - 1] ?? '';
+        return tok;
+      });
+      return rep;
+    });
+
+    return { output, matchCount, groupCount, error: null };
+  }
+
+  function normalizeImportedRule(item, idx = 0) {
+    const isHelper = Object.hasOwn(item, 'find_regex') || Object.hasOwn(item, 'replace_string');
+    const name = item.scriptName ?? item.script_name ?? `规则 #${idx + 1}`;
+    const findRegex = item.findRegex ?? item.find_regex ?? '';
+    const replaceString = item.replaceString ?? item.replace_string ?? '';
+    const trimStrings = item.trimStrings ?? item.trim_strings ?? [];
+    const disabled = isHelper ? item.enabled === false : Boolean(item.disabled);
+    const promptOnly = isHelper
+      ? Boolean(item.destination?.prompt && !item.destination?.display)
+      : Boolean(item.promptOnly && !item.markdownOnly);
+    return {
+      dialect: isHelper ? 'helper' : 'card',
+      scriptName: String(name),
+      findRegex: String(findRegex),
+      replaceString: String(replaceString),
+      trimStrings: Array.isArray(trimStrings) ? trimStrings : parseTrimList(trimStrings),
+      disabled,
+      promptOnly,
+    };
+  }
+
+  function extractFencedHtmlOrFullDoc(htmlText) {
+    const fence = /```(?:html)?\s*\n([\s\S]*?)```/i.exec(htmlText);
+    if (fence) {
+      return {
+        isIframeDoc: true,
+        innerDoc: fence[1],
+        surroundingBefore: htmlText.slice(0, fence.index).trim(),
+        surroundingAfter: htmlText.slice(fence.index + fence[0].length).trim(),
+      };
+    }
+    if (/^\s*<!doctype\s+html/i.test(htmlText) || /^\s*<html[\s>]/i.test(htmlText)) {
+      return { isIframeDoc: true, innerDoc: htmlText, surroundingBefore: '', surroundingAfter: '' };
+    }
+    return { isIframeDoc: false, innerDoc: htmlText, surroundingBefore: '', surroundingAfter: '' };
+  }
+
+  function runPreflightAudit({ error, matchCount, finalOutput, effectiveSurface, ruleMeta, varsError }) {
+    const audits = [];
+    if (error) {
+      audits.push({ severity: 'error', text: error });
+      return audits;
+    }
+    if (varsError) {
+      audits.push({ severity: 'warn', text: `模拟变量 JSON 格式错误：${varsError}` });
+    }
+    if (ruleMeta?.disabled) {
+      audits.push({ severity: 'warn', text: '该规则当前为禁用状态，导入酒馆后不会运行。' });
+    }
+    if (ruleMeta?.promptOnly) {
+      audits.push({ severity: 'warn', text: '该规则只勾选了提示词阶段（promptOnly），未开显示阶段，酒馆界面不会渲染。' });
+    }
+    if (state.mode === 'regex' && matchCount === 0) {
+      audits.push({ severity: 'warn', text: '查找表达式未匹配到测试文本，当前显示的是原文。' });
+    }
+
+    if (effectiveSurface === 'message') {
+      if (/<script[\s>]/i.test(finalOutput)) {
+        audits.push({
+          severity: 'warn',
+          text: '普通楼层内含 <script>：酒馆 DOMPurify 会将其过滤；需要跑脚本请套入 ```html 代码块走酒馆助手 iframe。',
+        });
+      }
+      if (/\son[a-z]+\s*=/i.test(finalOutput) || /href\s*=\s*["']?\s*javascript:/i.test(finalOutput)) {
+        audits.push({
+          severity: 'warn',
+          text: '普通楼层内含 onclick 等内联事件：酒馆 DOMPurify 会将其清掉；请改用 <details> 或走 iframe 代码块。',
+        });
+      }
+    }
+
+    if (audits.length === 0) {
+      audits.push({
+        severity: 'ok',
+        text: effectiveSurface === 'iframe'
+          ? '通过：当前按酒馆助手 iframe 沙盒运行，已挂载 getVariables / Mvu 模拟接口。'
+          : '通过：未发现会被普通楼层安全过滤拦截的脚本或内联事件。',
+      });
+    }
+    return audits;
+  }
+
+  function buildRuntimeShimScript(mockVarsObj, token) {
+    const safeJson = JSON.stringify(mockVarsObj || {}).replace(/</g, '\\u003c');
+    return `<script>
+(function(){
+  const __TOKEN = ${JSON.stringify(token)};
+  let __STORE = ${safeJson};
+  const __LISTENERS = new Map();
+  function __clone(v){ try { return JSON.parse(JSON.stringify(v)); } catch { return {}; } }
+  function __log(msg){
+    try { parent.postMessage({ __stPreviewLog: String(msg), token: __TOKEN }, '*'); } catch {}
+  }
+  window.__receiveMockVars = function(nextVars, emitUpdate){
+    __STORE = __clone(nextVars || {});
+    if (emitUpdate) window.eventEmit(window.Mvu.events.VARIABLE_UPDATE_ENDED, __clone(__STORE));
+  };
+  window.addEventListener('message', function(ev){
+    if (ev.data && ev.data.__stMvuUpdate) {
+      window.__receiveMockVars(ev.data.__stMvuUpdate, true);
+    }
+  });
+  window.getCurrentMessageId = function(){ return 0; };
+  window.getTavernVersion = function(){ return '1.18.0-preview'; };
+  window.getTavernHelperVersion = function(){ return '4.8.19-preview'; };
+  window.getVariables = function(){ return __clone(__STORE); };
+  window.replaceVariables = function(next){
+    __STORE = __clone(next || {});
+    __log('replaceVariables 已写入');
+    try { parent.postMessage({ __stVarsMutated: __clone(__STORE), token: __TOKEN }, '*'); } catch {}
+    return __clone(__STORE);
+  };
+  window.insertOrAssignVariables = function(patch){
+    __STORE = Object.assign({}, __STORE, __clone(patch || {}));
+    __log('更新变量: ' + Object.keys(patch || {}).join(', '));
+    try { parent.postMessage({ __stVarsMutated: __clone(__STORE), token: __TOKEN }, '*'); } catch {}
+    return __clone(__STORE);
+  };
+  window.updateVariablesWith = function(updater){
+    if (typeof updater === 'function') __STORE = __clone(updater(__clone(__STORE)) || __STORE);
+    __log('updateVariablesWith 已执行');
+    try { parent.postMessage({ __stVarsMutated: __clone(__STORE), token: __TOKEN }, '*'); } catch {}
+    return __clone(__STORE);
+  };
+  window.eventOn = function(evt, fn){
+    if (!__LISTENERS.has(evt)) __LISTENERS.set(evt, new Set());
+    __LISTENERS.get(evt).add(fn);
+    return { stop: function(){ __LISTENERS.get(evt)?.delete(fn); } };
+  };
+  window.eventOnce = function(evt, fn){
+    const sub = window.eventOn(evt, function(...a){ sub.stop(); fn(...a); });
+    return sub;
+  };
+  window.eventEmit = function(evt, payload){
+    __log('事件: ' + evt);
+    const set = __LISTENERS.get(evt);
+    if (set) set.forEach(fn => { try { fn(payload); } catch (e) { console.error(e); } });
+  };
+  window.waitGlobalInitialized = function(name){
+    return Promise.resolve(window[name]);
+  };
+  window.TavernHelper = {
+    getVariables: window.getVariables,
+    replaceVariables: window.replaceVariables,
+    insertOrAssignVariables: window.insertOrAssignVariables,
+    updateVariablesWith: window.updateVariablesWith,
+    eventOn: window.eventOn,
+    eventOnce: window.eventOnce,
+    eventEmit: window.eventEmit,
+    getCurrentMessageId: window.getCurrentMessageId
+  };
+  window.Mvu = {
+    events: { VARIABLE_UPDATE_ENDED: 'mvu_variable_update_ended' },
+    getMvuData: function(){ return __clone(__STORE); }
+  };
+  window.SillyTavern = {
+    getContext: function(){ return { name1: 'User', name2: 'Character', chatId: 'preview-chat' }; }
+  };
+  function __reportHeight(){
+    const b = document.body;
+    const h = b ? Math.ceil(b.getBoundingClientRect().height) : 150;
+    try { parent.postMessage({ __stPreviewHeight: Math.min(Math.max(h + 4, 110), 540), token: __TOKEN }, '*'); } catch {}
+  }
+  window.addEventListener('load', __reportHeight);
+  if (typeof ResizeObserver !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', function(){
+      if (document.body) new ResizeObserver(__reportHeight).observe(document.body);
+      setTimeout(__reportHeight, 60);
+    });
+  }
+  window.addEventListener('error', function(e){
+    __log('脚本报错: ' + (e.message || '未知错误'));
+  });
+})();
+<\/script>`;
+  }
+
+  function formatMixedProseAndHtml(src) {
+    const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+    const tagRe = /<!--[\s\S]*?-->|<\/?([a-zA-Z][\w:-]*)(?:\s[^<>]*?)?(\/?)>/g;
+    let out = '';
+    let lastIdx = 0;
+    let depth = 0;
+    let inRawTextTag = null;
+
+    for (const m of src.matchAll(tagRe)) {
+      const chunk = src.slice(lastIdx, m.index);
+      out += (depth === 0 && !inRawTextTag) ? chunk.replace(/\n/g, '<br>') : chunk;
+      const fullTag = m[0];
+      const name = (m[1] || '').toLowerCase();
+      const selfClose = m[2] === '/' || voidTags.has(name);
+
+      if (fullTag.startsWith('<!--')) {
+        out += fullTag;
+      } else if (fullTag.startsWith('</')) {
+        if (inRawTextTag === name) inRawTextTag = null;
+        if (depth > 0) depth -= 1;
+        out += fullTag;
+      } else {
+        if (!inRawTextTag) {
+          if (name === 'style' || name === 'script') inRawTextTag = name;
+          if (!selfClose) depth += 1;
+        }
+        out += fullTag;
+      }
+      lastIdx = m.index + fullTag.length;
+    }
+    const tail = src.slice(lastIdx);
+    out += (depth === 0 && !inRawTextTag) ? tail.replace(/\n/g, '<br>') : tail;
+    return out.replace(/(?:<br>\s*)+(<div|<section|<details|<table|<article)/gi, '<br>$1');
+  }
+
+  function buildSrcdoc({ finalOutput, extracted, effectiveSurface, mockVarsObj, token }) {
+    const shim = buildRuntimeShimScript(mockVarsObj, token);
+    const isDark = state.canvasTheme === 'dark';
+
+    if (effectiveSurface === 'iframe') {
+      const rawDoc = extracted.innerDoc;
+      if (/<head[\s>]/i.test(rawDoc)) {
+        return rawDoc.replace(/<head([^>]*)>/i, () => `<head>${shim}`);
+      }
+      if (/<html[\s>]/i.test(rawDoc)) {
+        return rawDoc.replace(/<html([^>]*)>/i, () => `<html><head>${shim}</head>`);
+      }
+      return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">${shim}<style>body{margin:0;color:${isDark ? '#EFECE6' : '#22201D'};font-family:"Sarasa UI SC",system-ui,sans-serif;}</style></head><body>${rawDoc}</body></html>`;
+    }
+
+    const bubbleBg = isDark ? '#1E1D1A' : '#FCFBF8';
+    const bubbleText = isDark ? '#EAE5DC' : '#1F1D1A';
+    const bubbleBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(36,32,26,0.12)';
+    const proseHtml = formatMixedProseAndHtml(finalOutput);
+
+    return `<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+${shim}
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: ${bubbleText};
+    font-family: "Sarasa UI SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+  .mes-bubble {
+    background: ${bubbleBg};
+    border: 1px solid ${bubbleBorder};
+    border-radius: 6px;
+    padding: 12px 14px;
+    word-break: break-word;
+  }
+</style>
+</head>
+<body>
+  <div class="mes-bubble">${proseHtml}</div>
+</body>
+</html>`;
+  }
+
+  function evaluateAndRender() {
+    persistState();
+
+    let mockVarsObj = {};
+    let varsError = null;
+    try {
+      mockVarsObj = state.mockVars.trim() ? JSON.parse(state.mockVars) : {};
+      $('vars-status').textContent = 'JSON 正常';
+    } catch (e) {
+      varsError = e.message;
+      $('vars-status').textContent = `JSON 语法错误：${e.message}`;
+    }
+
+    let finalOutput = '';
+    let matchCount = 0;
+    let groupCount = 0;
+    let regexError = null;
+    let currentRuleMeta = null;
+
+    if (state.mode === 'direct-html') {
+      finalOutput = state.replaceString;
+      $('match-pill').textContent = 'HTML 直渲';
+      $('match-pill').dataset.tone = 'ok';
+    } else if (state.chainAll && state.rulesList.length > 1) {
+      let running = state.sampleInput;
+      let totalHits = 0;
+      for (const r of state.rulesList) {
+        if (r.disabled || r.promptOnly) continue;
+        const step = applySingleRule(running, r);
+        if (step.error) {
+          regexError = `[${r.scriptName}] ${step.error}`;
+          break;
+        }
+        running = step.output;
+        totalHits += step.matchCount;
+      }
+      finalOutput = running;
+      matchCount = totalHits;
+      $('match-pill').textContent = regexError ? '正则有误' : `串联匹配 ${totalHits} 处`;
+      $('match-pill').dataset.tone = regexError ? 'err' : (totalHits > 0 ? 'ok' : 'warn');
+    } else {
+      if (state.rulesList[state.activeRuleIdx]) {
+        currentRuleMeta = state.rulesList[state.activeRuleIdx];
+      }
+      const res = applySingleRule(state.sampleInput, {
+        findRegex: state.findRegex,
+        replaceString: state.replaceString,
+        trimStrings: state.trimStrings,
+      });
+      finalOutput = res.output;
+      matchCount = res.matchCount;
+      groupCount = res.groupCount;
+      regexError = res.error;
+
+      if (regexError) {
+        $('match-pill').textContent = '正则语法错误';
+        $('match-pill').dataset.tone = 'err';
+      } else if (matchCount === 0) {
+        $('match-pill').textContent = '未匹配';
+        $('match-pill').dataset.tone = 'warn';
+      } else {
+        $('match-pill').textContent = groupCount > 0 ? `匹配 ${matchCount} 处 · ${groupCount} 组` : `匹配 ${matchCount} 处`;
+        $('match-pill').dataset.tone = 'ok';
+      }
+    }
+
+    const extracted = extractFencedHtmlOrFullDoc(finalOutput);
+    const effectiveSurface = state.hostSurface === 'auto'
+      ? (extracted.isIframeDoc ? 'iframe' : 'message')
+      : state.hostSurface;
+
+    const audits = runPreflightAudit({
+      error: regexError,
+      matchCount,
+      finalOutput,
+      effectiveSurface,
+      ruleMeta: currentRuleMeta,
+      varsError,
+    });
+
+    const warnItems = audits.filter((a) => a.severity === 'warn' || a.severity === 'error');
+    const badge = $('audit-badge');
+    if (warnItems.length > 0) {
+      badge.textContent = String(warnItems.length);
+      badge.classList.remove('hidden');
+      const topIssue = warnItems[0];
+      $('alert-banner').textContent = topIssue.text;
+      $('alert-banner').dataset.level = topIssue.severity === 'error' ? 'error' : 'warn';
+      $('alert-banner').classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+      $('alert-banner').classList.add('hidden');
+    }
+
+    const auditList = $('audit-list');
+    auditList.textContent = '';
+    for (const item of audits) {
+      const li = document.createElement('li');
+      li.className = 'audit-item';
+      li.dataset.severity = item.severity;
+      li.textContent = item.text;
+      auditList.appendChild(li);
+    }
+
+    $('html-output').textContent = finalOutput;
+    $('output-meta').textContent = `${finalOutput.length} 字符 · ${effectiveSurface === 'iframe' ? 'iframe 沙盒' : '普通楼层'}`;
+
+    const showSurrounding = effectiveSurface === 'iframe';
+    const beforeEl = $('prose-before');
+    const afterEl = $('prose-after');
+    if (showSurrounding && extracted.surroundingBefore) {
+      beforeEl.textContent = extracted.surroundingBefore;
+      beforeEl.classList.remove('hidden');
+    } else {
+      beforeEl.textContent = '';
+      beforeEl.classList.add('hidden');
+    }
+    if (showSurrounding && extracted.surroundingAfter) {
+      afterEl.textContent = extracted.surroundingAfter;
+      afterEl.classList.remove('hidden');
+    } else {
+      afterEl.textContent = '';
+      afterEl.classList.add('hidden');
+    }
+
+    const token = Math.random().toString(36).slice(2, 10);
+    state.renderToken = token;
+    $('preview-frame').srcdoc = buildSrcdoc({
+      finalOutput,
+      extracted,
+      effectiveSurface,
+      mockVarsObj,
+      token,
+    });
+  }
+
+  function importJsonRules(rawText) {
+    const parsed = JSON.parse(rawText);
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    if (arr.length === 0) throw new Error('JSON 数组为空');
+    const normalized = arr.map((it, idx) => normalizeImportedRule(it, idx));
+    state.rulesList = normalized;
+    state.activeRuleIdx = 0;
+    state.chainAll = false;
+    $('chain-all-toggle').checked = false;
+
+    if (normalized.length > 1) {
+      const sel = $('rule-index-select');
+      sel.textContent = '';
+      normalized.forEach((r, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = `${i + 1}. ${r.scriptName}${r.disabled ? ' (禁用)' : ''}`;
+        sel.appendChild(opt);
+      });
+      $('multi-rule-bar').classList.remove('hidden');
+    } else {
+      $('multi-rule-bar').classList.add('hidden');
+    }
+
+    loadRuleFromList(0);
+  }
+
+  function loadRuleFromList(idx) {
+    const r = state.rulesList[idx];
+    if (!r) return;
+    state.activeRuleIdx = idx;
+    state.mode = 'regex';
+    state.scriptName = r.scriptName;
+    state.findRegex = r.findRegex;
+    state.trimStrings = r.trimStrings.join(', ');
+    state.replaceString = r.replaceString;
+    syncInputsFromState();
+    evaluateAndRender();
+  }
+
+  function buildExportPayload(dialect) {
+    const trims = parseTrimList(state.trimStrings);
+    const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `regex-${Date.now()}`;
+    if (dialect === 'helper') {
+      return {
+        id,
+        script_name: state.scriptName || '状态栏渲染',
+        enabled: true,
+        find_regex: state.findRegex,
+        replace_string: state.replaceString,
+        trim_strings: trims,
+        source: { user_input: false, ai_output: true, slash_command: false, world_info: false },
+        destination: { display: true, prompt: false },
+        run_on_edit: true,
+        min_depth: null,
+        max_depth: null,
+      };
+    }
+    return {
+      id,
+      scriptName: state.scriptName || '状态栏渲染',
+      findRegex: state.findRegex,
+      replaceString: state.replaceString,
+      trimStrings: trims,
+      placement: [2],
+      disabled: false,
+      markdownOnly: true,
+      promptOnly: false,
+      runOnEdit: true,
+      substituteRegex: 0,
+      minDepth: null,
+      maxDepth: null,
+    };
+  }
+
+  function downloadJson(filename, obj) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function consumeDraftIfNewer(draft) {
+    if (!draft || !draft.updatedAt) return false;
+    if (Number(draft.updatedAt) <= state.lastDraftTs) return false;
+    state.lastDraftTs = Number(draft.updatedAt);
+    state.rulesList = [];
+    $('multi-rule-bar').classList.add('hidden');
+    applyPresetObject({
+      mode: draft.mode || 'regex',
+      hostSurface: draft.hostSurface || 'auto',
+      scriptName: draft.scriptName || draft.title || '对话草稿',
+      findRegex: draft.findRegex ?? state.findRegex,
+      trimStrings: draft.trimStrings ?? state.trimStrings,
+      replaceString: draft.replaceString ?? state.replaceString,
+      sampleInput: draft.sampleInput ?? state.sampleInput,
+      mockVars: draft.mockVars ?? state.mockVars,
+    }, true);
+    showConsoleLog(`已同步草稿：${draft.title || draft.scriptName || '状态栏'}`);
+    return true;
+  }
+
+  async function pollLiveDraft() {
+    if (!state.liveSync) return;
+    try {
+      const res = await sidecarFetch('/api/draft', { method: 'GET' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.hasDraft && data.draft) {
+        consumeDraftIfNewer(data.draft);
+      }
+    } catch {}
+  }
+
+  function showConsoleLog(msg) {
+    $('console-text').textContent = msg;
+    $('console-strip').classList.remove('hidden');
+  }
+
+  window.addEventListener('message', (ev) => {
+    const d = ev.data;
+    if (!d || d.token !== state.renderToken) return;
+    if (typeof d.__stPreviewHeight === 'number') {
+      $('preview-frame').style.height = `${d.__stPreviewHeight}px`;
+    }
+    if (typeof d.__stPreviewLog === 'string') {
+      showConsoleLog(d.__stPreviewLog);
+    }
+    if (d.__stVarsMutated && typeof d.__stVarsMutated === 'object') {
+      state.mockVars = JSON.stringify(d.__stVarsMutated, null, 2);
+      $('mock-vars').value = state.mockVars;
+      persistState();
+    }
+  });
+
+  let debounceTimer = null;
+  function scheduleRender() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(evaluateAndRender, 100);
+  }
+
+  $('preset-select').addEventListener('change', (e) => {
+    const key = e.target.value;
+    if (key && PRESETS[key]) {
+      state.rulesList = [];
+      $('multi-rule-bar').classList.add('hidden');
+      applyPresetObject(PRESETS[key], true);
+    }
+    e.target.value = '';
+  });
+
+  $('import-btn').addEventListener('click', () => $('import-file').click());
+  $('import-file').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      importJsonRules(text);
+      showConsoleLog(`已导入 ${file.name}`);
+    } catch (err) {
+      showConsoleLog(`导入失败：${err.message}`);
+    }
+    e.target.value = '';
+  });
+
+  $('sync-btn').addEventListener('click', () => {
+    state.liveSync = !state.liveSync;
+    syncInputsFromState();
+    persistState();
+    if (state.liveSync) void pollLiveDraft();
+  });
+
+  document.querySelectorAll('[data-stage-view]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.stageView = btn.dataset.stageView;
+      document.querySelectorAll('[data-stage-view]').forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+      });
+      $('view-render').classList.toggle('hidden', state.stageView !== 'render');
+      $('view-html').classList.toggle('hidden', state.stageView !== 'html');
+      $('view-audit').classList.toggle('hidden', state.stageView !== 'audit');
+    });
+  });
+
+  document.querySelectorAll('[data-viewport]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.viewport = btn.dataset.viewport;
+      document.querySelectorAll('[data-viewport]').forEach((b) => b.classList.toggle('active', b === btn));
+      $('viewport-box').dataset.vp = state.viewport;
+      persistState();
+    });
+  });
+
+  $('bg-toggle').addEventListener('click', () => {
+    state.canvasTheme = state.canvasTheme === 'dark' ? 'light' : 'dark';
+    syncInputsFromState();
+    evaluateAndRender();
+  });
+
+  $('rerender-btn').addEventListener('click', evaluateAndRender);
+  $('clear-console-btn').addEventListener('click', () => $('console-strip').classList.add('hidden'));
+
+  $('copy-html-btn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('html-output').textContent || '');
+      showConsoleLog('已复制 HTML');
+    } catch {}
+  });
+
+  document.querySelectorAll('[data-wb-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.wbTab = btn.dataset.wbTab;
+      document.querySelectorAll('[data-wb-tab]').forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+      });
+      ['rule', 'sample', 'vars', 'export'].forEach((k) => {
+        $(`wb-${k}`).classList.toggle('hidden', k !== state.wbTab);
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-insert]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const ta = $('replace-string');
+      const ins = chip.dataset.insert || '';
+      const start = ta.selectionStart ?? ta.value.length;
+      const end = ta.selectionEnd ?? ta.value.length;
+      ta.value = ta.value.slice(0, start) + ins + ta.value.slice(end);
+      state.replaceString = ta.value;
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = start + ins.length;
+      scheduleRender();
+    });
+  });
+
+  document.querySelectorAll('[data-wrap-fence]').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const cur = state.replaceString.trim();
+      if (/^```html/i.test(cur)) return;
+      state.replaceString = '```html\n' + cur + '\n```';
+      $('replace-string').value = state.replaceString;
+      evaluateAndRender();
+    });
+  });
+
+  $('rule-index-select').addEventListener('change', (e) => loadRuleFromList(Number(e.target.value) || 0));
+  $('chain-all-toggle').addEventListener('change', (e) => {
+    state.chainAll = e.target.checked;
+    evaluateAndRender();
+  });
+
+  $('input-mode').addEventListener('change', (e) => {
+    state.mode = e.target.value;
+    syncInputsFromState();
+    evaluateAndRender();
+  });
+
+  $('host-surface').addEventListener('change', (e) => {
+    state.hostSurface = e.target.value;
+    evaluateAndRender();
+  });
+
+  ['script-name', 'find-regex', 'trim-strings', 'replace-string', 'sample-input', 'mock-vars'].forEach((id) => {
+    const keyMap = {
+      'script-name': 'scriptName',
+      'find-regex': 'findRegex',
+      'trim-strings': 'trimStrings',
+      'replace-string': 'replaceString',
+      'sample-input': 'sampleInput',
+      'mock-vars': 'mockVars',
+    };
+    $(id).addEventListener('input', (e) => {
+      state[keyMap[id]] = e.target.value;
+      if (state.rulesList[state.activeRuleIdx] && id !== 'sample-input' && id !== 'mock-vars') {
+        const cur = state.rulesList[state.activeRuleIdx];
+        cur.scriptName = state.scriptName;
+        cur.findRegex = state.findRegex;
+        cur.trimStrings = parseTrimList(state.trimStrings);
+        cur.replaceString = state.replaceString;
+      }
+      scheduleRender();
+    });
+  });
+
+  $('emit-mvu-btn').addEventListener('click', () => {
+    try {
+      const parsed = state.mockVars.trim() ? JSON.parse(state.mockVars) : {};
+      $('vars-status').textContent = '已发送更新事件';
+      $('preview-frame').contentWindow?.postMessage({ __stMvuUpdate: parsed }, '*');
+    } catch (e) {
+      $('vars-status').textContent = `JSON 语法错误：${e.message}`;
+    }
+  });
+
+  $('parse-json-btn').addEventListener('click', () => {
+    try {
+      const raw = $('paste-json-area').value.trim();
+      if (!raw) return;
+      importJsonRules(raw);
+      document.querySelector('[data-wb-tab="rule"]').click();
+    } catch (e) {
+      showConsoleLog(`JSON 解析失败：${e.message}`);
+    }
+  });
+
+  $('export-card-btn').addEventListener('click', () => {
+    const obj = buildExportPayload('card');
+    downloadJson(`${obj.scriptName || 'regex'}-card.json`, obj);
+  });
+
+  $('export-th-btn').addEventListener('click', () => {
+    const obj = buildExportPayload('helper');
+    downloadJson(`${obj.script_name || 'regex'}-tavern-helper.json`, obj);
+  });
+
+  $('copy-card-json-btn').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(buildExportPayload('card'), null, 2));
+      showConsoleLog('已复制 JSON');
+    } catch {}
+  });
+
+  function switchTopMode(modeName) {
+    const isXray = modeName === 'xray';
+    document.querySelectorAll('[data-top-mode]').forEach((btn) => {
+      const active = btn.dataset.topMode === modeName;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+    $('panel-studio').classList.toggle('hidden', isXray);
+    $('panel-xray').classList.toggle('hidden', !isXray);
+    $('studio-top-actions').classList.toggle('hidden', isXray);
+    $('xray-top-actions').classList.toggle('hidden', !isXray);
+  }
+
+  document.querySelectorAll('[data-top-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => switchTopMode(btn.dataset.topMode));
+  });
+
+  window.__stStudioBridge = {
+    switchTopMode,
+    loadSingleRegex(rawRule, sampleText, mockVarsObj) {
+      state.rulesList = [];
+      $('multi-rule-bar').classList.add('hidden');
+      const norm = normalizeImportedRule(rawRule, 0);
+      if (typeof sampleText === 'string' && sampleText.trim()) state.sampleInput = sampleText;
+      if (mockVarsObj && typeof mockVarsObj === 'object') {
+        state.mockVars = JSON.stringify(mockVarsObj, null, 2);
+      }
+      applyPresetObject({
+        mode: 'regex',
+        hostSurface: 'auto',
+        scriptName: norm.scriptName,
+        findRegex: norm.findRegex,
+        trimStrings: norm.trimStrings,
+        replaceString: norm.replaceString,
+        sampleInput: state.sampleInput,
+        mockVars: state.mockVars,
+      }, true);
+      switchTopMode('studio');
+    },
+    loadAllRegexes(rawRulesArray, sampleText, mockVarsObj) {
+      if (typeof sampleText === 'string' && sampleText.trim()) state.sampleInput = sampleText;
+      if (mockVarsObj && typeof mockVarsObj === 'object') {
+        state.mockVars = JSON.stringify(mockVarsObj, null, 2);
+      }
+      importJsonRules(JSON.stringify(rawRulesArray));
+      if (rawRulesArray.length > 1) {
+        state.chainAll = true;
+        $('chain-all-toggle').checked = true;
+        evaluateAndRender();
+      }
+      switchTopMode('studio');
+    },
+    loadDirectHtml(htmlText, label, mockVarsObj) {
+      state.rulesList = [];
+      $('multi-rule-bar').classList.add('hidden');
+      if (mockVarsObj && typeof mockVarsObj === 'object') {
+        state.mockVars = JSON.stringify(mockVarsObj, null, 2);
+      }
+      applyPresetObject({
+        mode: 'direct-html',
+        hostSurface: 'auto',
+        scriptName: label || '内嵌页面',
+        replaceString: htmlText,
+        mockVars: state.mockVars,
+      }, true);
+      switchTopMode('studio');
+    },
+    setSampleFloor(floorText) {
+      state.sampleInput = String(floorText || '');
+      syncInputsFromState();
+      evaluateAndRender();
+      switchTopMode('studio');
+    },
+  };
+
+  loadInitialState();
+  syncInputsFromState();
+  if (state.liveSync && window.__INITIAL_DRAFT) {
+    if (!consumeDraftIfNewer(window.__INITIAL_DRAFT)) evaluateAndRender();
+  } else {
+    evaluateAndRender();
+  }
+  void pollLiveDraft();
+  setInterval(pollLiveDraft, POLL_MS);
+})();
+
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  if (!$('panel-xray')) return;
+
+  let currentAvatarUrl = null;
+  let currentAnalyzed = null;
+
+  function decodeBase64ToUtf8(b64) {
+    const clean = String(b64 || '').replace(/\s+/g, '');
+    const bin = atob(clean);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+  }
+
+  function parsePayloadString(str) {
+    const trimmed = String(str || '').trim();
+    if (!trimmed) throw new Error('文本块为空');
+    if (trimmed.startsWith('{')) return JSON.parse(trimmed);
+    return JSON.parse(decodeBase64ToUtf8(trimmed));
+  }
+
+  async function inflateZlibBytes(u8) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('当前环境不支持解压 zTXt 数据块');
+    }
+    const tryFormat = async (fmt, slice) => {
+      const ds = new DecompressionStream(fmt);
+      const writer = ds.writable.getWriter();
+      writer.write(slice);
+      writer.close();
+      const buf = await new Response(ds.readable).arrayBuffer();
+      return new Uint8Array(buf);
+    };
+    try {
+      return await tryFormat('deflate', u8);
+    } catch {
+      return await tryFormat('deflate-raw', u8.subarray(2));
+    }
+  }
+
+  async function parsePngCharacterCard(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    const sig = [137, 80, 78, 71, 13, 10, 26, 10];
+    if (bytes.length < 24 || !sig.every((b, i) => bytes[i] === b)) {
+      throw new Error('文件头不是有效的 PNG 图片');
+    }
+
+    const view = new DataView(arrayBuffer);
+    const latin1 = new TextDecoder('latin1');
+    const utf8 = new TextDecoder('utf-8');
+    const foundPayloads = [];
+    let offset = 8;
+
+    while (offset + 12 <= bytes.length) {
+      const len = view.getUint32(offset, false);
+      const type = latin1.decode(bytes.subarray(offset + 4, offset + 8));
+      const dataStart = offset + 8;
+      const dataEnd = dataStart + len;
+      if (dataEnd + 4 > bytes.length) {
+        throw new Error(`PNG 数据块 ${type} 长度异常`);
+      }
+      const chunk = bytes.subarray(dataStart, dataEnd);
+
+      if (type === 'tEXt') {
+        const nul = chunk.indexOf(0);
+        if (nul > 0) {
+          const keyword = latin1.decode(chunk.subarray(0, nul));
+          const text = latin1.decode(chunk.subarray(nul + 1));
+          if (/^(ccv3|chara)$/i.test(keyword)) {
+            foundPayloads.push({ chunkType: 'tEXt', keyword: keyword.toLowerCase(), rawText: text });
+          }
+        }
+      } else if (type === 'zTXt') {
+        const nul = chunk.indexOf(0);
+        if (nul > 0 && nul + 2 <= chunk.length) {
+          const keyword = latin1.decode(chunk.subarray(0, nul));
+          if (/^(ccv3|chara)$/i.test(keyword)) {
+            const inflated = await inflateZlibBytes(chunk.subarray(nul + 2));
+            foundPayloads.push({ chunkType: 'zTXt', keyword: keyword.toLowerCase(), rawText: latin1.decode(inflated) });
+          }
+        }
+      } else if (type === 'iTXt') {
+        const nul1 = chunk.indexOf(0);
+        if (nul1 > 0 && nul1 + 3 <= chunk.length) {
+          const keyword = latin1.decode(chunk.subarray(0, nul1));
+          const compFlag = chunk[nul1 + 1];
+          let pos = nul1 + 3;
+          const nul2 = chunk.indexOf(0, pos);
+          if (nul2 >= 0) {
+            pos = nul2 + 1;
+            const nul3 = chunk.indexOf(0, pos);
+            if (nul3 >= 0) {
+              pos = nul3 + 1;
+              if (/^(ccv3|chara)$/i.test(keyword)) {
+                const bodyBytes = compFlag === 1 ? await inflateZlibBytes(chunk.subarray(pos)) : chunk.subarray(pos);
+                foundPayloads.push({ chunkType: 'iTXt', keyword: keyword.toLowerCase(), rawText: utf8.decode(bodyBytes) });
+              }
+            }
+          }
+        }
+      } else if (type === 'IEND') {
+        break;
+      }
+
+      offset = dataEnd + 4;
+    }
+
+    if (foundPayloads.length === 0) {
+      throw new Error('图片内未找到 ccv3 或 chara 数据块（可能经聊天软件压缩丢失了元数据）');
+    }
+
+    const parsedList = foundPayloads.map((p) => ({
+      ...p,
+      json: parsePayloadString(p.rawText),
+    }));
+
+    const ccv3Entry = parsedList.find((p) => p.keyword === 'ccv3');
+    const charaEntry = parsedList.find((p) => p.keyword === 'chara');
+    const chosen = ccv3Entry || charaEntry || parsedList[0];
+
+    let dualNote = null;
+    if (ccv3Entry && charaEntry) {
+      const n1 = ccv3Entry.json?.data?.name || ccv3Entry.json?.name || '';
+      const n2 = charaEntry.json?.data?.name || charaEntry.json?.name || '';
+      if (n1 !== n2) dualNote = `ccv3（${n1}）与 chara（${n2}）名称不一致`;
+    }
+
+    return {
+      rawCard: chosen.json,
+      chunkSummary: `${chosen.chunkType}/${chosen.keyword}`,
+      dualNote,
+    };
+  }
+
+  function estimateTokens(text) {
+    const str = String(text || '');
+    if (!str) return 0;
+    let cjk = 0;
+    for (let i = 0; i < str.length; i++) {
+      if (str.charCodeAt(i) > 0x2E80) cjk++;
+    }
+    return Math.ceil(cjk * 0.85 + (str.length - cjk) * 0.28);
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  function extractTavernHelper(ext) {
+    const th = ext?.tavern_helper;
+    if (!th) return { scripts: [], regexes: [], variables: null };
+    let mapObj = th;
+    if (Array.isArray(th)) {
+      mapObj = {};
+      for (const pair of th) {
+        if (Array.isArray(pair) && pair.length >= 2 && typeof pair[0] === 'string') {
+          mapObj[pair[0]] = pair[1];
+        }
+      }
+    }
+    const scriptsRaw = Array.isArray(mapObj.scripts) ? mapObj.scripts : [];
+    const regexRaw = Array.isArray(mapObj.regexes) ? mapObj.regexes : (Array.isArray(mapObj.tavern_regexes) ? mapObj.tavern_regexes : []);
+    const varsRaw = (mapObj.variables && typeof mapObj.variables === 'object') ? mapObj.variables : null;
+    return { scripts: scriptsRaw, regexes: regexRaw, variables: varsRaw };
+  }
+
+  function scanSecurityNotes({ regexes, scripts, greetings }) {
+    const notes = [];
+    const remoteUrls = new Set();
+    let hasEval = false;
+    let hasWildcardPost = false;
+
+    const inspectCode = (str, where) => {
+      const s = String(str || '');
+      if (!s) return;
+      for (const m of s.matchAll(/https?:\/\/[^\s"'`)<>]+/gi)) {
+        const u = m[0];
+        if (/\.(?:mjs|js|css)\b|jsdelivr|unpkg|esm\.sh|cdnjs|github/i.test(u)) {
+          remoteUrls.add(`${u}（${where}）`);
+        }
+      }
+      if (/\beval\s*\(|new\s+Function\s*\(/i.test(s)) hasEval = true;
+      if (/postMessage\s*\([^)]*['"]\*['"]\s*\)/i.test(s)) hasWildcardPost = true;
+    };
+
+    regexes.forEach((r) => inspectCode(r.replaceString ?? r.replace_string, r.scriptName || r.script_name || '正则'));
+    scripts.forEach((sc) => inspectCode(sc.content ?? sc.code ?? JSON.stringify(sc), sc.name || '脚本'));
+    greetings.forEach((g) => inspectCode(g.text, g.label));
+
+    if (remoteUrls.size > 0) {
+      notes.push({
+        warn: true,
+        title: `外部脚本或样式链接（${remoteUrls.size} 处）`,
+        detail: Array.from(remoteUrls).slice(0, 5).join('\n'),
+      });
+    }
+    if (hasEval) {
+      notes.push({
+        warn: true,
+        title: '含 eval / new Function 动态执行',
+        detail: '当前仅做静态展示未运行，导入酒馆前请核对下方源码。',
+      });
+    }
+    if (hasWildcardPost) {
+      notes.push({
+        warn: true,
+        title: '含 postMessage(..., "*") 跨窗口消息',
+        detail: '请留意接收侧是否校验消息字段。',
+      });
+    }
+    if (notes.length === 0) {
+      notes.push({
+        warn: false,
+        title: '未发现外部脚本链接或 eval 调用',
+        detail: '',
+      });
+    }
+    return notes;
+  }
+
+  function analyzeRawCard(rawCard, meta = {}) {
+    if (!rawCard || typeof rawCard !== 'object') throw new Error('无效的 JSON 对象');
+    const d = (rawCard.data && typeof rawCard.data === 'object') ? rawCard.data : rawCard;
+
+    const spec = rawCard.spec === 'chara_card_v3'
+      ? 'CCv3'
+      : (rawCard.spec === 'chara_card_v2' ? 'CCv2' : 'JSON');
+
+    const personaFields = [
+      { key: 'description', label: '角色描述 (description)', text: d.description || '' },
+      { key: 'personality', label: '性格 (personality)', text: d.personality || '' },
+      { key: 'scenario', label: '场景 (scenario)', text: d.scenario || '' },
+      { key: 'mes_example', label: '对话示例 (mes_example)', text: d.mes_example || '' },
+      { key: 'system_prompt', label: '系统提示词 (system_prompt)', text: d.system_prompt || '' },
+      { key: 'post_history_instructions', label: '历史后指令 (post_history_instructions)', text: d.post_history_instructions || '' },
+      { key: 'creator_notes', label: '作者说明 (creator_notes)', text: d.creator_notes || '' },
+    ].filter((f) => String(f.text).trim().length > 0);
+
+    const greetings = [];
+    if (typeof d.first_mes === 'string' && d.first_mes.length > 0) {
+      greetings.push({ label: '主开场白', text: d.first_mes });
+    }
+    if (Array.isArray(d.alternate_greetings)) {
+      d.alternate_greetings.forEach((g, i) => {
+        if (typeof g === 'string' && g.length > 0) {
+          greetings.push({ label: `备选 #${i + 1}`, text: g });
+        }
+      });
+    }
+    if (Array.isArray(d.group_only_greetings)) {
+      d.group_only_greetings.forEach((g, i) => {
+        if (typeof g === 'string' && g.length > 0) {
+          greetings.push({ label: `群聊开场 #${i + 1}`, text: g });
+        }
+      });
+    }
+
+    const rawWbEntries = d.character_book?.entries;
+    const wbEntries = (Array.isArray(rawWbEntries) ? rawWbEntries : Object.values(rawWbEntries || {}))
+      .filter((e) => e && typeof e === 'object')
+      .map((e, idx) => ({
+        title: e.comment || e.name || `条目 #${idx + 1}`,
+        keys: Array.isArray(e.keys) ? e.keys : [],
+        constant: Boolean(e.constant),
+        enabled: e.enabled !== false && !e.disable,
+        content: String(e.content || ''),
+      }));
+
+    const cardRegexes = Array.isArray(d.extensions?.regex_scripts) ? d.extensions.regex_scripts : [];
+    const th = extractTavernHelper(d.extensions);
+    const allRegexes = [
+      ...cardRegexes,
+      ...th.regexes,
+    ];
+
+    const scripts = th.scripts.map((s, idx) => ({
+      name: s.name || s.scriptName || `脚本 #${idx + 1}`,
+      enabled: s.enabled !== false,
+      info: s.info || s.description || '',
+      content: String(s.content ?? s.code ?? ''),
+    }));
+
+    const personaChars = personaFields.filter((f) => f.key !== 'creator_notes').reduce((n, f) => n + f.text.length, 0);
+    const greetChars = greetings.reduce((n, g) => n + g.text.length, 0);
+    const wbChars = wbEntries.reduce((n, e) => n + e.content.length, 0);
+    const regexChars = allRegexes.reduce((n, r) => n + String(r.replaceString ?? r.replace_string ?? '').length, 0);
+    const scriptChars = scripts.reduce((n, s) => n + s.content.length, 0);
+
+    const budgetParts = [
+      { label: '人设', chars: personaChars, tokens: estimateTokens(personaFields.map((f) => f.text).join('\n')), color: '#B8654B' },
+      { label: '世界书', chars: wbChars, tokens: estimateTokens(wbEntries.map((e) => e.content).join('\n')), color: '#5E849A' },
+      { label: '开场白', chars: greetChars, tokens: estimateTokens(greetings.map((g) => g.text).join('\n')), color: '#689D7D' },
+      { label: '正则', chars: regexChars, tokens: estimateTokens(allRegexes.map((r) => r.replaceString ?? r.replace_string ?? '').join('\n')), color: '#C89B4B' },
+      { label: '脚本', chars: scriptChars, tokens: estimateTokens(scripts.map((s) => s.content).join('\n')), color: '#8C759E' },
+    ];
+
+    const secNotes = scanSecurityNotes({ regexes: allRegexes, scripts, greetings });
+
+    return {
+      rawCard,
+      name: d.name || '未命名',
+      creator: d.creator || '',
+      version: d.character_version || '',
+      tags: Array.isArray(d.tags) ? d.tags : [],
+      spec,
+      meta,
+      personaFields,
+      greetings,
+      wbEntries,
+      allRegexes,
+      scripts,
+      thVariables: th.variables,
+      budgetParts,
+      secNotes,
+    };
+  }
+
+  function makeEl(tag, className, text) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+
+  function renderXrayView(info) {
+    currentAnalyzed = info;
+    $('xray-error').classList.add('hidden');
+    $('xray-result').classList.remove('hidden');
+    $('xray-count-pill').textContent = info.name.slice(0, 6);
+    $('xray-count-pill').classList.remove('hidden');
+
+    if (info.meta.avatarUrl) {
+      $('card-avatar-img').src = info.meta.avatarUrl;
+      $('card-avatar-img').classList.remove('hidden');
+      $('card-avatar-fallback').classList.add('hidden');
+    } else {
+      $('card-avatar-img').classList.add('hidden');
+      $('card-avatar-fallback').textContent = info.meta.format || 'JSON';
+      $('card-avatar-fallback').classList.remove('hidden');
+    }
+
+    $('card-name').textContent = info.name;
+    $('card-spec-badge').textContent = [info.spec, info.meta.chunkSummary].filter(Boolean).join(' · ');
+
+    const sub = $('card-submeta');
+    sub.textContent = '';
+    const metaItems = [];
+    if (info.creator) metaItems.push(`作者 ${info.creator}`);
+    if (info.version) metaItems.push(`v${info.version.replace(/^v/i, '')}`);
+    if (info.meta.byteSize) metaItems.push(formatBytes(info.meta.byteSize));
+    if (info.meta.dualNote) metaItems.push(info.meta.dualNote);
+    metaItems.forEach((m) => sub.appendChild(makeEl('span', '', m)));
+
+    const tagRow = $('card-tags-row');
+    tagRow.textContent = info.tags.length > 0 ? `标签：${info.tags.slice(0, 10).join(' / ')}` : '';
+    tagRow.classList.toggle('hidden', info.tags.length === 0);
+
+    const totalChars = info.budgetParts.reduce((s, p) => s + p.chars, 0);
+    const totalToks = info.budgetParts.reduce((s, p) => s + p.tokens, 0);
+    $('budget-total').textContent = `${totalChars.toLocaleString()} 字 · ~${totalToks.toLocaleString()} tok`;
+
+    const bar = $('budget-bar');
+    const legend = $('budget-legend');
+    bar.textContent = '';
+    legend.textContent = '';
+    info.budgetParts.forEach((p) => {
+      if (p.chars <= 0 || totalChars <= 0) return;
+      const pct = Math.round((p.chars / totalChars) * 100);
+      const seg = makeEl('div', 'budget-seg');
+      seg.style.width = `${Math.max((p.chars / totalChars) * 100, 1.5)}%`;
+      seg.style.background = p.color;
+      bar.appendChild(seg);
+      legend.appendChild(makeEl('span', '', `${p.label} ${pct}% (${p.chars.toLocaleString()}字)`));
+    });
+
+    $('xcount-regex').textContent = String(info.allRegexes.length);
+    $('xcount-greet').textContent = String(info.greetings.length);
+    $('xcount-wb').textContent = String(info.wbEntries.length);
+    $('xcount-scripts').textContent = String(info.scripts.length);
+
+    renderRegexList(info);
+    renderGreetingsList(info);
+    renderWorldbookList(info, '');
+    renderScriptsAndSecurity(info);
+    renderPersonaList(info);
+  }
+
+  function pickBestSampleForRegex(info, rule) {
+    const rawPat = rule.findRegex ?? rule.find_regex ?? '';
+    if (!rawPat || info.greetings.length === 0) return info.greetings[0]?.text || '';
+    const slash = /^\/([\s\S]*)\/([a-z]*)$/.exec(rawPat);
+    try {
+      const re = slash ? new RegExp(slash[1], slash[2].replace(/g/g, '')) : new RegExp(rawPat, 'm');
+      const hit = info.greetings.find((g) => re.test(g.text));
+      if (hit) return hit.text;
+    } catch {}
+    return info.greetings[0]?.text || '';
+  }
+
+  function renderRegexList(info) {
+    const box = $('xray-regex-list');
+    box.textContent = '';
+    $('xray-regex-toolbar').classList.toggle('hidden', info.allRegexes.length <= 1);
+
+    if (info.allRegexes.length === 0) {
+      box.appendChild(makeEl('div', 'empty-hint', '无内嵌正则。'));
+      return;
+    }
+
+    info.allRegexes.forEach((r, idx) => {
+      const row = makeEl('div', 'flat-row');
+      const head = makeEl('div', 'row-head');
+      const titleWrap = makeEl('div', 'row-title');
+      const name = r.scriptName ?? r.script_name ?? `正则 #${idx + 1}`;
+      const isDisabled = Object.hasOwn(r, 'enabled') ? r.enabled === false : Boolean(r.disabled);
+      titleWrap.appendChild(makeEl('span', '', name));
+      if (isDisabled) titleWrap.appendChild(makeEl('span', 'plain-tag warn', '禁用'));
+
+      const isDisplay = Object.hasOwn(r, 'destination')
+        ? Boolean(r.destination?.display)
+        : Boolean(r.markdownOnly || (!r.markdownOnly && !r.promptOnly));
+      titleWrap.appendChild(makeEl('span', 'plain-tag', isDisplay ? '显示' : '仅提示词'));
+
+      const sendBtn = makeEl('button', 'btn primary sm', '送入调试台');
+      sendBtn.type = 'button';
+      sendBtn.addEventListener('click', () => {
+        const sample = pickBestSampleForRegex(info, r);
+        window.__stStudioBridge?.loadSingleRegex(r, sample, info.thVariables);
+      });
+
+      head.appendChild(titleWrap);
+      head.appendChild(sendBtn);
+      row.appendChild(head);
+
+      row.appendChild(makeEl('div', 'row-meta', r.findRegex ?? r.find_regex ?? ''));
+
+      const repStr = String(r.replaceString ?? r.replace_string ?? '');
+      const det = makeEl('details', 'x-details');
+      det.appendChild(makeEl('summary', '', `替换模板 (${repStr.length} 字)`));
+      det.appendChild(makeEl('pre', 'x-pre', repStr));
+      row.appendChild(det);
+
+      box.appendChild(row);
+    });
+  }
+
+  function renderGreetingsList(info) {
+    const box = $('xray-greet-list');
+    box.textContent = '';
+    if (info.greetings.length === 0) {
+      box.appendChild(makeEl('div', 'empty-hint', '无开场白。'));
+      return;
+    }
+
+    info.greetings.forEach((g) => {
+      const row = makeEl('div', 'flat-row');
+      const head = makeEl('div', 'row-head');
+      const titleWrap = makeEl('div', 'row-title');
+      titleWrap.appendChild(makeEl('span', '', g.label));
+      titleWrap.appendChild(makeEl('span', 'plain-tag', `${g.text.length.toLocaleString()} 字`));
+
+      const actions = makeEl('div', 'btn-row');
+      const asSampleBtn = makeEl('button', 'btn sm', '用作测试文本');
+      asSampleBtn.type = 'button';
+      asSampleBtn.addEventListener('click', () => {
+        window.__stStudioBridge?.setSampleFloor(g.text);
+      });
+      actions.appendChild(asSampleBtn);
+
+      if (/<(?:div|style|html|section|details|table)|```html/i.test(g.text)) {
+        const directBtn = makeEl('button', 'btn primary sm', '直接渲染 HTML');
+        directBtn.type = 'button';
+        directBtn.addEventListener('click', () => {
+          window.__stStudioBridge?.loadDirectHtml(g.text, g.label, info.thVariables);
+        });
+        actions.appendChild(directBtn);
+      }
+
+      head.appendChild(titleWrap);
+      head.appendChild(actions);
+      row.appendChild(head);
+
+      const det = makeEl('details', 'x-details');
+      det.appendChild(makeEl('summary', '', '查看正文'));
+      det.appendChild(makeEl('pre', 'x-pre', g.text));
+      row.appendChild(det);
+      box.appendChild(row);
+    });
+  }
+
+  function renderWorldbookList(info, query) {
+    const box = $('xray-wb-list');
+    box.textContent = '';
+    if (info.wbEntries.length === 0) {
+      box.appendChild(makeEl('div', 'empty-hint', '无内嵌世界书。'));
+      return;
+    }
+
+    const q = String(query || '').trim().toLowerCase();
+    const filtered = q
+      ? info.wbEntries.filter((e) =>
+        e.title.toLowerCase().includes(q) ||
+        e.content.toLowerCase().includes(q) ||
+        e.keys.some((k) => String(k).toLowerCase().includes(q)))
+      : info.wbEntries;
+
+    if (filtered.length === 0) {
+      box.appendChild(makeEl('div', 'empty-hint', `无匹配「${query}」的条目。`));
+      return;
+    }
+
+    filtered.forEach((e) => {
+      const row = makeEl('div', 'flat-row');
+      const head = makeEl('div', 'row-head');
+      const titleWrap = makeEl('div', 'row-title');
+      titleWrap.appendChild(makeEl('span', '', e.title));
+      titleWrap.appendChild(makeEl('span', 'plain-tag', e.constant ? '常驻' : '关键词'));
+      if (!e.enabled) titleWrap.appendChild(makeEl('span', 'plain-tag warn', '禁用'));
+      head.appendChild(titleWrap);
+      head.appendChild(makeEl('span', 'row-meta', `${e.content.length} 字`));
+      row.appendChild(head);
+
+      if (!e.constant && e.keys.length > 0) {
+        row.appendChild(makeEl('div', 'row-meta', `触发词：${e.keys.join('、')}`));
+      }
+
+      const det = makeEl('details', 'x-details');
+      det.appendChild(makeEl('summary', '', '查看正文'));
+      det.appendChild(makeEl('pre', 'x-pre', e.content));
+      row.appendChild(det);
+      box.appendChild(row);
+    });
+  }
+
+  function renderScriptsAndSecurity(info) {
+    const secBox = $('xray-sec-summary');
+    const scBox = $('xray-scripts-list');
+    secBox.textContent = '';
+    scBox.textContent = '';
+
+    info.secNotes.forEach((n) => {
+      const row = makeEl('div', 'flat-row');
+      const head = makeEl('div', 'row-head');
+      const title = makeEl('div', 'row-title');
+      title.appendChild(makeEl('span', `plain-tag ${n.warn ? 'warn' : ''}`, n.warn ? '留意' : '静态检查'));
+      title.appendChild(makeEl('span', '', n.title));
+      head.appendChild(title);
+      row.appendChild(head);
+      if (n.detail) row.appendChild(makeEl('div', 'row-meta', n.detail));
+      secBox.appendChild(row);
+    });
+
+    if (info.thVariables) {
+      const row = makeEl('div', 'flat-row');
+      row.appendChild(makeEl('div', 'row-title', '随卡初始变量 (tavern_helper.variables)'));
+      const det = makeEl('details', 'x-details');
+      det.appendChild(makeEl('summary', '', '查看 JSON'));
+      det.appendChild(makeEl('pre', 'x-pre', JSON.stringify(info.thVariables, null, 2)));
+      row.appendChild(det);
+      scBox.appendChild(row);
+    }
+
+    if (info.scripts.length === 0) {
+      scBox.appendChild(makeEl('div', 'empty-hint', '无内嵌 TavernHelper 脚本。'));
+      return;
+    }
+
+    info.scripts.forEach((s) => {
+      const row = makeEl('div', 'flat-row');
+      const head = makeEl('div', 'row-head');
+      const titleWrap = makeEl('div', 'row-title');
+      titleWrap.appendChild(makeEl('span', '', s.name));
+      if (!s.enabled) titleWrap.appendChild(makeEl('span', 'plain-tag warn', '默认关闭'));
+      head.appendChild(titleWrap);
+      head.appendChild(makeEl('span', 'row-meta', `${s.content.length} 字`));
+      row.appendChild(head);
+      if (s.info) row.appendChild(makeEl('div', 'muted-note', s.info));
+
+      const det = makeEl('details', 'x-details');
+      det.appendChild(makeEl('summary', '', '查看源码'));
+      det.appendChild(makeEl('pre', 'x-pre', s.content));
+      row.appendChild(det);
+      box.appendChild(row);
+    });
+  }
+
+  function renderPersonaList(info) {
+    const box = $('xray-persona-list');
+    box.textContent = '';
+    if (info.personaFields.length === 0) {
+      box.appendChild(makeEl('div', 'empty-hint', '无人设文本字段。'));
+      return;
+    }
+    info.personaFields.forEach((f) => {
+      const row = makeEl('div', 'flat-row');
+      const head = makeEl('div', 'row-head');
+      head.appendChild(makeEl('div', 'row-title', f.label));
+      head.appendChild(makeEl('span', 'row-meta', `${f.text.length.toLocaleString()} 字`));
+      row.appendChild(head);
+      const det = makeEl('details', 'x-details');
+      det.open = f.key === 'description';
+      det.appendChild(makeEl('summary', '', '查看内容'));
+      det.appendChild(makeEl('pre', 'x-pre', f.text));
+      row.appendChild(det);
+      box.appendChild(row);
+    });
+  }
+
+  async function handleCardFile(file) {
+    if (!file) return;
+    $('xray-error').classList.add('hidden');
+    try {
+      const buf = await file.arrayBuffer();
+      const isPng = file.type === 'image/png' || /\.png$/i.test(file.name);
+
+      if (currentAvatarUrl) {
+        URL.revokeObjectURL(currentAvatarUrl);
+        currentAvatarUrl = null;
+      }
+
+      if (isPng) {
+        const parsedPng = await parsePngCharacterCard(buf);
+        currentAvatarUrl = URL.createObjectURL(file);
+        const info = analyzeRawCard(parsedPng.rawCard, {
+          format: 'PNG',
+          chunkSummary: parsedPng.chunkSummary,
+          dualNote: parsedPng.dualNote,
+          byteSize: file.size,
+          avatarUrl: currentAvatarUrl,
+        });
+        renderXrayView(info);
+      } else {
+        const text = new TextDecoder('utf-8').decode(buf);
+        const rawJson = JSON.parse(text);
+        const info = analyzeRawCard(rawJson, {
+          format: 'JSON',
+          chunkSummary: '',
+          byteSize: file.size,
+          avatarUrl: null,
+        });
+        renderXrayView(info);
+      }
+      window.__stStudioBridge?.switchTopMode('xray');
+    } catch (err) {
+      $('xray-error').textContent = `解析失败：${err.message || '未知错误'}`;
+      $('xray-error').classList.remove('hidden');
+    }
+  }
+
+  function loadDemoCard() {
+    const svgPortrait = `data:image/svg+xml;utf8,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 160">
+        <rect width="120" height="160" fill="#23211E"/>
+        <rect x="12" y="12" width="96" height="136" fill="none" stroke="#6E665B" stroke-width="1"/>
+        <text x="60" y="76" text-anchor="middle" fill="#E6E0D5" font-size="15" font-family="serif">沈 砚</text>
+        <text x="60" y="98" text-anchor="middle" fill="#9A9184" font-size="10" font-family="sans-serif">临淮渡漕运账房</text>
+      </svg>`,
+    )}`;
+
+    const demoRaw = {
+      spec: 'chara_card_v3',
+      spec_version: '3.0',
+      data: {
+        name: '沈砚',
+        creator: '示例卡',
+        character_version: '1.0',
+        tags: ['古风', '查账探案', '含状态栏'],
+        description: '临淮渡北岸万通货栈的二账房，管着南来北往的船货斤两与栈租出入。常年穿一件洗得发白的青布直裰，右手食指与中指有常年拨算盘留下的薄茧。记数极准，不爱替人兜烂账。',
+        personality: '认死理，说话留三分余地，碰到假账会追到底。',
+        scenario: '腊月封河前夕，货栈少了三船官盐的入库底单，{{user}}奉命来北岸核查旧账。',
+        first_mes: `沈砚把炭盆往桌脚边拨了拨，从架子最下层抽出一摞用麻绳捆着的流水簿，解开绳结摊在桌上。\n“十月十五到廿二的进出仓都在这儿了。官盐那三页被人用茶水洇过，字迹模糊，不过船头的吃水尺码还在水牌上记着，对一对就能看出差了多少斤。”\n\n<ledger>腊月初八 申时 | 万通货栈·内账房 | 剩余盘查时限：三日 | 已核对：水牌尺码 | 待查：十月十八夜班更夫名册</ledger>`,
+        alternate_greetings: [
+          `<div style="font-family:'Sarasa UI SC',sans-serif;background:#1E1C19;color:#EAE4DA;padding:14px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.12)">
+  <div style="font-size:15px;font-weight:600;margin-bottom:6px">封河查账 · 选择来访身份</div>
+  <div style="font-size:12px;color:#9E9689;margin-bottom:10px">不同身份会影响沈砚起初愿意交出的底簿范围：</div>
+  <div style="display:grid;gap:6px;font-size:12.5px">
+    <div style="padding:7px 10px;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">转运司书办：持有正式勘合公文，可直接调阅官盐底册</div>
+    <div style="padding:7px 10px;border-radius:4px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">东家远亲：以年终盘库名义入栈，不惊动码头脚夫</div>
+  </div>
+</div>`,
+        ],
+        character_book: {
+          name: '临淮渡货栈设定',
+          entries: [
+            {
+              comment: '状态栏输出格式',
+              constant: true,
+              enabled: true,
+              keys: [],
+              content: '每次回复末尾附一行账目进度：\n<ledger>时辰 | 地点 | 剩余时限 | 已核实线索 | 当前待查项</ledger>',
+            },
+            {
+              comment: '万通货栈水牌规矩',
+              constant: false,
+              enabled: true,
+              keys: ['水牌', '吃水', '尺码'],
+              content: '货船靠岸时由码头丈量手先记船身吃水寸数挂上木牌，进仓后再由账房落纸账，两处分属不同管事，很难同时改口。',
+            },
+          ],
+        },
+        extensions: {
+          regex_scripts: [
+            {
+              id: 'demo-ledger-regex',
+              scriptName: '账房核查记录栏',
+              findRegex: '/<ledger>\\s*([^|]+?)\\s*\\|\\s*([^|]+?)\\s*\\|\\s*([^|]+?)\\s*\\|\\s*([^|]+?)\\s*\\|\\s*([\\s\\S]*?)<\\/ledger>/gi',
+              replaceString: `<div class="ledger-box">
+  <style>
+    .ledger-box {
+      margin-top: 12px; padding: 10px 13px; border-radius: 6px;
+      background: #1B1A17; border: 1px solid rgba(234,229,220,0.14);
+      color: #EAE5DC; font-family: "Sarasa UI SC", sans-serif; font-size: 12.5px;
+    }
+    .ledger-top { display: flex; justify-content: space-between; gap: 8px; padding-bottom: 7px; margin-bottom: 8px; border-bottom: 1px solid rgba(234,229,220,0.09); color: #B4AC9E; font-size: 12px; }
+    .ledger-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; font-size: 12px; }
+    .ledger-row span { color: #8F887D; flex-shrink: 0; }
+  </style>
+  <div class="ledger-top"><span>$1 · $2</span><span>$3</span></div>
+  <div class="ledger-row"><span>已核实</span><strong>$4</strong></div>
+  <div class="ledger-row"><span>待查项</span><strong>$5</strong></div>
+</div>`,
+              trimStrings: [],
+              placement: [2],
+              disabled: false,
+              markdownOnly: true,
+              promptOnly: false,
+            },
+          ],
+          tavern_helper: [
+            ['variables', { stat_data: { location: '万通货栈·内账房', budget: 120, progress: 25, trust: 50 } }],
+          ],
+        },
+      },
+    };
+
+    const info = analyzeRawCard(demoRaw, {
+      format: '示例',
+      chunkSummary: '',
+      byteSize: JSON.stringify(demoRaw).length,
+      avatarUrl: svgPortrait,
+    });
+    renderXrayView(info);
+  }
+
+  const dropzone = $('xray-dropzone');
+  dropzone.addEventListener('click', () => $('xray-file-input').click());
+  dropzone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      $('xray-file-input').click();
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const file = e.dataTransfer?.files?.[0];
+    if (file) void handleCardFile(file);
+  });
+
+  $('xray-pick-btn').addEventListener('click', () => $('xray-file-input').click());
+  $('xray-file-input').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (file) void handleCardFile(file);
+    e.target.value = '';
+  });
+
+  $('xray-demo-btn').addEventListener('click', loadDemoCard);
+
+  $('send-all-regex-btn').addEventListener('click', () => {
+    if (!currentAnalyzed || currentAnalyzed.allRegexes.length === 0) return;
+    const sample = currentAnalyzed.greetings[0]?.text || '';
+    window.__stStudioBridge?.loadAllRegexes(currentAnalyzed.allRegexes, sample, currentAnalyzed.thVariables);
+  });
+
+  $('wb-search-input').addEventListener('input', (e) => {
+    if (!currentAnalyzed) return;
+    renderWorldbookList(currentAnalyzed, e.target.value);
+  });
+
+  $('export-raw-card-btn').addEventListener('click', () => {
+    if (!currentAnalyzed?.rawCard) return;
+    const blob = new Blob([JSON.stringify(currentAnalyzed.rawCard, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentAnalyzed.name || 'character-card'}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  document.querySelectorAll('[data-xray-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.xrayTab;
+      document.querySelectorAll('[data-xray-tab]').forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+      });
+      ['regex', 'greetings', 'worldbook', 'scripts', 'persona'].forEach((k) => {
+        $(`xpane-${k}`).classList.toggle('hidden', k !== target);
+      });
+    });
+  });
+})();
+
+  </script>
+</body>
+</html>

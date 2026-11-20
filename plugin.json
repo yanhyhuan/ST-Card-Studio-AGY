@@ -1,0 +1,18 @@
+{
+  "name": "st-statusbar-preview",
+  "displayName": "酒馆角色卡工作台",
+  "version": "0.3.0",
+  "description": "在右侧栏拆包查看 PNG / JSON 角色卡内容，实时调试状态栏正则与 MVU 变量界面。",
+  "logo": "assets/logo.svg",
+  "author": {
+    "name": "yanhyhuan",
+    "url": "https://github.com/yanhyhuan"
+  },
+  "homepage": "https://github.com/yanhyhuan/ST-Card-Studio-AGY",
+  "repository": "https://github.com/yanhyhuan/ST-Card-Studio-AGY",
+  "suggestedPrompts": [
+    "打开酒馆角色卡工作台",
+    "写一条酒馆状态栏正则并推送到工作台预览",
+    "检查当前状态栏正则在窄屏和 DOMPurify 下有没有问题"
+  ]
+}

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>酒馆角色卡工作台</title>
+  <script src="/preload.js"></script>
+  <!-- __INLINE_STYLE_SLOT__ -->
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand-row">
+        <h1 class="app-title">酒馆角色卡工作台</h1>
+        <div class="mode-switch" role="tablist" aria-label="功能切换">
+          <button type="button" role="tab" id="topmode-studio" class="mode-btn active" data-top-mode="studio" aria-selected="true">状态栏调试</button>
+          <button type="button" role="tab" id="topmode-xray" class="mode-btn" data-top-mode="xray" aria-selected="false">
+            角色卡拆包 <span id="xray-count-pill" class="mini-count hidden"></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="studio-top-actions" class="top-actions">
+        <label class="sr-only" for="preset-select">载入示例</label>
+        <select id="preset-select" class="select-clean" title="载入内置示例">
+          <option value="">示例…</option>
+          <option value="css-card">纯 CSS 状态栏</option>
+          <option value="mvu-hud">MVU 变量面板 (iframe)</option>
+          <option value="purify-trap">普通楼层清洗预警</option>
+        </select>
+        <button id="import-btn" type="button" class="btn" title="导入正则 JSON 文件">导入正则</button>
+        <input id="import-file" type="file" accept=".json,application/json" hidden>
+        <button id="sync-btn" type="button" class="btn sync-toggle" aria-pressed="true" title="自动同步左侧对话写入的草稿">
+          <span class="sync-dot" aria-hidden="true"></span>对话同步
+        </button>
+      </div>
+
+      <div id="xray-top-actions" class="top-actions hidden">
+        <button id="xray-demo-btn" type="button" class="btn">试看示例卡</button>
+        <button id="xray-pick-btn" type="button" class="btn primary">打开 PNG / JSON</button>
+        <input id="xray-file-input" type="file" accept=".png,.json,image/png,application/json" hidden>
+      </div>
+    </header>
+
+    <!-- ================= SCREEN 1: STATUSBAR STUDIO ================= -->
+    <div id="panel-studio" class="mode-panel">
+      <section class="stage-section" aria-label="预览画布">
+        <div class="stage-toolbar">
+          <div class="toolbar-left">
+            <div class="seg-group" role="tablist" aria-label="输出视图">
+              <button type="button" role="tab" class="seg-btn active" data-stage-view="render" aria-selected="true">预览</button>
+              <button type="button" role="tab" class="seg-btn" data-stage-view="html" aria-selected="false">HTML</button>
+              <button type="button" role="tab" class="seg-btn" data-stage-view="audit" aria-selected="false">
+                预检 <span id="audit-badge" class="audit-badge hidden">0</span>
+              </button>
+            </div>
+            <span id="match-pill" class="match-status" role="status" aria-live="polite">就绪</span>
+          </div>
+
+          <div class="stage-controls">
+            <div class="seg-group" role="group" aria-label="预览宽度">
+              <button type="button" class="seg-btn active" data-viewport="fluid">铺满</button>
+              <button type="button" class="seg-btn" data-viewport="mobile">360px</button>
+              <button type="button" class="seg-btn" data-viewport="desktop">660px</button>
+            </div>
+            <button id="bg-toggle" type="button" class="btn sm">深色底</button>
+            <button id="rerender-btn" type="button" class="btn sm">刷新</button>
+          </div>
+        </div>
+
+        <div id="alert-banner" class="alert-banner hidden" role="status" aria-live="polite"></div>
+
+        <div id="view-render" class="stage-canvas-wrap" data-canvas-theme="dark">
+          <div id="viewport-box" class="viewport-box" data-vp="fluid">
+            <div id="prose-before" class="surrounding-prose hidden"></div>
+            <iframe
+              id="preview-frame"
+              class="preview-frame"
+              sandbox="allow-scripts"
+              title="状态栏渲染沙盒"
+            ></iframe>
+            <div id="prose-after" class="surrounding-prose hidden"></div>
+          </div>
+        </div>
+
+        <div id="view-html" class="code-view hidden">
+          <div class="code-toolbar">
+            <span id="output-meta" class="muted-note"></span>
+            <button id="copy-html-btn" type="button" class="btn sm">复制 HTML</button>
+          </div>
+          <pre id="html-output" class="mono-pre"></pre>
+        </div>
+
+        <div id="view-audit" class="audit-view hidden">
+          <ul id="audit-list" class="audit-list"></ul>
+          <p class="boundary-note">
+            注：此处仅模拟正则替换与常用 TavernHelper / MVU 变量读写，不展开 <code>{{user}}</code> 等酒馆宏，发卡前请以 SillyTavern 实机导入为准。
+          </p>
+        </div>
+
+        <div id="console-strip" class="console-strip hidden" aria-live="polite">
+          <span class="console-label">日志</span>
+          <span id="console-text" class="console-text"></span>
+          <button id="clear-console-btn" type="button" class="text-link">清除</button>
+        </div>
+      </section>
+
+      <section class="workbench-section" aria-label="编辑区">
+        <nav class="wb-tabs" role="tablist" aria-label="编辑项">
+          <button type="button" role="tab" class="wb-tab active" data-wb-tab="rule" aria-selected="true">正则</button>
+          <button type="button" role="tab" class="wb-tab" data-wb-tab="sample" aria-selected="false">测试文本</button>
+          <button type="button" role="tab" class="wb-tab" data-wb-tab="vars" aria-selected="false">模拟变量</button>
+          <button type="button" role="tab" class="wb-tab" data-wb-tab="export" aria-selected="false">导入导出</button>
+        </nav>
+
+        <div id="wb-rule" class="wb-pane">
+          <div id="multi-rule-bar" class="multi-rule-bar hidden">
+            <label class="field-inline" for="rule-index-select">
+              <span>规则</span>
+              <select id="rule-index-select" class="select-clean"></select>
+            </label>
+            <label class="check-inline">
+              <input id="chain-all-toggle" type="checkbox">
+              <span>按顺序执行全部启用项</span>
+            </label>
+          </div>
+
+          <div id="regex-fields">
+            <div class="field">
+              <label for="find-regex">查找表达式 <code>findRegex</code></label>
+              <input id="find-regex" type="text" class="full-input mono" spellcheck="false" placeholder="/<status>([\s\S]*?)<\/status>/gi">
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="field-head">
+              <label id="replace-label" for="replace-string">替换内容 <code>replaceString</code></label>
+              <div class="chip-bar">
+                <button type="button" class="mini-chip" data-insert="$1">$1</button>
+                <button type="button" class="mini-chip" data-insert="{{match}}">{{match}}</button>
+                <button type="button" class="mini-chip" data-wrap-fence="1">套入 html 代码块</button>
+              </div>
+            </div>
+            <textarea id="replace-string" class="code-area" rows="9" spellcheck="false" placeholder="HTML / CSS 或 ```html 代码块"></textarea>
+          </div>
+
+          <details class="meta-drawer">
+            <summary>更多设置</summary>
+            <div class="meta-drawer-body">
+              <div class="row-split">
+                <div class="field">
+                  <label for="input-mode">模式</label>
+                  <select id="input-mode" class="full-input">
+                    <option value="regex">正则替换</option>
+                    <option value="direct-html">直接渲染 HTML</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="host-surface">挂载环境</label>
+                  <select id="host-surface" class="full-input">
+                    <option value="auto">自动判断</option>
+                    <option value="message">普通楼层（检查 DOMPurify）</option>
+                    <option value="iframe">酒馆助手 iframe</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row-split">
+                <div class="field">
+                  <label for="script-name">规则名</label>
+                  <input id="script-name" type="text" class="full-input">
+                </div>
+                <div class="field">
+                  <label for="trim-strings">剔除词 <code>trimStrings</code>（逗号分隔）</label>
+                  <input id="trim-strings" type="text" class="full-input mono">
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div id="wb-sample" class="wb-pane hidden">
+          <div class="field">
+            <label for="sample-input">用于测试正则匹配的楼层原文</label>
+            <textarea id="sample-input" class="code-area" rows="10" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div id="wb-vars" class="wb-pane hidden">
+          <div class="pane-head-actions">
+            <span id="vars-status" class="muted-note">JSON 正常</span>
+            <button id="emit-mvu-btn" type="button" class="btn primary sm">触发变量更新事件</button>
+          </div>
+          <div class="field">
+            <label for="mock-vars">供 <code>getVariables()</code> 与 <code>Mvu.getMvuData()</code> 读取的 JSON</label>
+            <textarea id="mock-vars" class="code-area" rows="10" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div id="wb-export" class="wb-pane hidden">
+          <div class="field">
+            <label for="paste-json-area">粘贴正则 JSON（兼容角色卡与酒馆助手格式）</label>
+            <textarea id="paste-json-area" class="code-area" rows="5" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button id="parse-json-btn" type="button" class="btn primary sm">载入 JSON</button>
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <div class="btn-row">
+            <button id="export-card-btn" type="button" class="btn">导出角色卡正则 (.json)</button>
+            <button id="export-th-btn" type="button" class="btn">导出酒馆助手正则 (.json)</button>
+            <button id="copy-card-json-btn" type="button" class="btn">复制 JSON</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= SCREEN 2: CARD DISASSEMBLY ================= -->
+    <div id="panel-xray" class="mode-panel hidden">
+      <div id="xray-dropzone" class="xray-dropbar" tabindex="0" role="button" aria-label="拖入或选择 PNG 或 JSON 角色卡">
+        <span class="drop-main">拖入 <code>.png</code> / <code>.json</code> 角色卡，或点击选择文件</span>
+        <span class="drop-sub">本地只读解析 <code>ccv3</code> / <code>chara</code></span>
+      </div>
+
+      <div id="xray-error" class="alert-banner hidden" data-level="error" role="alert"></div>
+
+      <section id="xray-result" class="xray-result hidden" aria-label="角色卡内容">
+        <div class="card-sheet">
+          <div id="card-avatar-wrap" class="card-avatar-wrap">
+            <img id="card-avatar-img" class="card-avatar-img hidden" alt="封面">
+            <span id="card-avatar-fallback" class="card-avatar-fallback">JSON</span>
+          </div>
+          <div class="card-meta-main">
+            <div class="card-title-row">
+              <h2 id="card-name" class="card-name"></h2>
+              <span id="card-spec-badge" class="card-spec-text"></span>
+            </div>
+            <div id="card-submeta" class="card-submeta"></div>
+            <div id="card-tags-row" class="card-tags-row"></div>
+          </div>
+          <div class="card-hero-actions">
+            <button id="export-raw-card-btn" type="button" class="btn sm">导出 JSON</button>
+          </div>
+        </div>
+
+        <div class="budget-strip">
+          <div class="budget-head">
+            <span>字数与词元估算</span>
+            <strong id="budget-total" class="budget-total"></strong>
+          </div>
+          <div id="budget-bar" class="budget-bar" aria-hidden="true"></div>
+          <div id="budget-legend" class="budget-legend"></div>
+        </div>
+
+        <div class="workbench-section">
+          <nav class="wb-tabs" role="tablist" aria-label="角色卡条目">
+            <button type="button" role="tab" class="wb-tab active" data-xray-tab="regex" aria-selected="true">
+              正则 <span id="xcount-regex" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="greetings" aria-selected="false">
+              开场白 <span id="xcount-greet" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="worldbook" aria-selected="false">
+              世界书 <span id="xcount-wb" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="scripts" aria-selected="false">
+              脚本与检查 <span id="xcount-scripts" class="tab-num">0</span>
+            </button>
+            <button type="button" role="tab" class="wb-tab" data-xray-tab="persona" aria-selected="false">
+              人设字段
+            </button>
+          </nav>
+
+          <div id="xpane-regex" class="wb-pane">
+            <div id="xray-regex-toolbar" class="pane-head-actions hidden">
+              <span></span>
+              <button id="send-all-regex-btn" type="button" class="btn sm">全部载入调试台</button>
+            </div>
+            <div id="xray-regex-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-greetings" class="wb-pane hidden">
+            <div id="xray-greet-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-worldbook" class="wb-pane hidden">
+            <input id="wb-search-input" type="search" class="full-input" placeholder="按条目名、触发词或正文筛选…">
+            <div id="xray-wb-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-scripts" class="wb-pane hidden">
+            <div id="xray-sec-summary" class="flat-list"></div>
+            <div id="xray-scripts-list" class="flat-list"></div>
+          </div>
+
+          <div id="xpane-persona" class="wb-pane hidden">
+            <div id="xray-persona-list" class="flat-list"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <!-- __INLINE_SCRIPT_SLOT__ -->
+</body>
+</html>
